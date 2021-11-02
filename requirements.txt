@@ -1,0 +1,17 @@
+define target audience and create tool accordingly
+getting the data
+check which columns are significant
+cleaning it (processing)
+create plots for it (select useful ones)
+Interactive Visualization with Dash (choose good layout/colors etc.)
+for interactive visualization: give users the opportunity to filter the data shown/select other types of plots
+find another dataset (clean) and find out if data is correlated / how
+predict future cases (creating models, compare them to each other by defining some metric)
+find correlations between attributes and covid-19 cases
+
+
+plots:
+line chart for countries/continents
+scatter plot attributes for x/y: location, continent, date, total cases, total_deaths, total_tests, hosp_patients, reproduction rate, weekly_icu_admissions, weekly_hosp_admissions, (vaccinations), positive_rate, stringency_index (what are people allowed to do), population, population_density, age, gdp_per_capita, extreme_poverty, cardiovasc_death_rate, diabetes_pervalence, female_smokers, male_smokers, handwashing_facilities, life_expectancy, hospital_beds_per_thousand, human_development_index, excess_mortality
+
+
