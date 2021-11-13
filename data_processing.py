@@ -53,7 +53,6 @@ def getData():
         "human_development_index",
         "excess_mortality",
     ]
-
     df = df[attributes]
 
     # let's store these rows which combine data of a continent in a seperate dataframe, so it doesn't give us any weird mistakes later/confuse us
@@ -75,14 +74,6 @@ def getData():
     df = df[df["location"].isin(temp)]
     # reset index, so that it is correct again (we dropped rows)
     df.reset_index(inplace=True, drop=True)
-
-    # number of trailing NaNs for column new_cases
-    temp = df.copy()
-    temp.reset_index(inplace=True)
-    last_index = temp.groupby("location").apply(lambda x: x.iloc[-1]["index"])
-    last_valid_index = temp.groupby("location").apply(
-        lambda x: x["new_cases"].last_valid_index()
-    )
 
     # also while looking through the records, we found that some countries have leading NaNs for new_cases
     # let's remove these (while we're at it, let's also remove trailing NaNs)
@@ -122,7 +113,7 @@ def getData():
     ]
     df.drop(columns=cols_to_drop, inplace=True)
 
-    # maybe the high number of missing values comes from leading NaNs? let's check that (those are not the number of leading NaNs!!!!!!!)
+    # maybe the high number of missing values comes from leading NaNs? let's check that
     temp = df.copy()
     temp.reset_index(inplace=True)
     first_index = temp.groupby("location").apply(lambda x: x.iloc[0]["index"])
@@ -139,21 +130,31 @@ def getData():
     first_valid_index = df.groupby("location").apply(
         lambda x: x["total_vaccinations"].first_valid_index()
     )
+    temp = df.iloc[list(first_valid_index)][
+        ["total_vaccinations", "location"]
+    ].set_index("location")
+    # get the countries that have zero as first non-NaN value
+    countries_with_zero = temp[temp["total_vaccinations"] == 0].index
 
-    # so unfortunately these aren't always zero, however just interpolating these leading NaNs would temper too much with the given data, so let's just set them to zero
+    # so unfortunately these aren't always zero, however just interpolating these leading NaNs would temper too much with the given data
+    # let's just set the ones to zero where the first non-NaN value is zero
     df.reset_index(inplace=True)
-    first_index = df.groupby("location").apply(lambda x: x.iloc[0]["index"])
+    temp = df[df["location"].isin(countries_with_zero)].groupby("location")
+    first_index = temp.apply(lambda x: x.iloc[0]["index"])
+    first_valid_index = temp.apply(
+        lambda x: x["total_vaccinations"].first_valid_index()
+    )
     df.drop(columns=["index"], inplace=True)
     # create list of indices that we want to change
-    valid_indices = [
+    zero_indices = [
         np.arange(first, last - 1)
         for first, last in zip(first_index, first_valid_index)
     ]
     # flatten it to be a 1D array instead of 2D
-    valid_indices = [elem for sublist in valid_indices for elem in sublist]
+    zero_indices = [elem for sublist in zero_indices for elem in sublist]
     # also set the people_vaccinated, people_fully_vaccinated, new_vaccinations to 0 for these rows
     df.loc[
-        valid_indices,
+        zero_indices,
         [
             "total_vaccinations",
             "people_vaccinated",
@@ -173,13 +174,19 @@ def getData():
         lambda x: x["total_tests"].first_valid_index()
     )
 
-    # we can't do anything here as well..
-    # so let's do some interpolation (we'll only interpolate between the first valid value and the last, because it would probably temper too much with the data)
-    # first we'll look at the percentage of missing values for each column again
-    cols = df.columns
+    # let's check what the first value looks like that isn't NaN
+    df.reset_index(drop=True, inplace=True)
+    first_valid_index = df.groupby("location").apply(
+        lambda x: x["total_tests"].first_valid_index()
+    )
+    first_valid_index = first_valid_index.dropna()
+    temp = df.iloc[list(first_valid_index)][["total_tests", "location"]].set_index(
+        "location"
+    )
 
     # since we're only gonna interpolate between the first and last valid value for each country, we can basically put each column in here and see to what extent it fixes something
     # we'll only interpolate the total_columns and add the missing values later for the new_columns
+    cols = df.columns
     cols_to_interpolate = [
         "total_deaths",
         "reproduction_rate",
@@ -251,7 +258,7 @@ def getData():
         temp.groupby("continent").std() / temp.groupby("continent").mean()
     ).mean()
 
-    # for some columns the std is quite big compared to the mean value, for these columns it's probably not a good idea to just use the mean
+    # for some columns the std is quite big compared to the mean value, for these columns it's probably not a good idea to just use the mean (this would temper too much with our data)
     # now we just need to define a threshhold at which we want to use the mean of the continent for missing values
     threshhold = 0.5
     cols_to_use_mean = means_all <= threshhold
@@ -265,4 +272,73 @@ def getData():
             df[nan_indices]["continent"], col
         ].to_numpy()
 
+    # except a few columns it's looking decent now, not sure what to do further with this dataset
+
+    """
+    # Other Dataset: Information about policies of countries [from Oxford University](https://github.com/OxCGRT/covid-policy-tracker)
+
+    ### [Description of columns](https://github.com/OxCGRT/covid-policy-tracker/tree/master/documentation)
+    """
+
+    df_additional = pd.read_csv(
+        "https://raw.githubusercontent.com/OxCGRT/covid-policy-tracker/master/data/OxCGRT_latest.csv",
+        parse_dates=["Date"],
+    )
+
+    # since our other dataset only has national-wide data, we'll only use it here as well
+    df_additional = df_additional[df_additional["Jurisdiction"] == "NAT_TOTAL"]
+    # drop columns that were used for regional description
+    df_additional.drop(
+        columns=["RegionName", "RegionCode", "Jurisdiction"], inplace=True
+    )
+
+    # M1_Wildcard only has missing values, lets drop that really quick
+    df_additional.drop(columns=["M1_Wildcard"], inplace=True)
+    # we can also drop ConfirmedCases since that's complete in out other datset anyway
+    # we might be able to use ConfirmedDeaths though, because there were missing values for that in our other dataset
+    df_additional.drop(columns=["ConfirmedCases"], inplace=True)
+
+    # ok so it's well spread between countries
+    # honestly this data set just looks really good, not really sure what to do
+    # since the C, E, H columns are all qualitive with very few options and the Index columns result from them, I don't think it makes sense to do interpolation on these
+    # let's try interpolating missing values in ConfirmedDeaths (only between first and last valid index)
+    # first sort the df it by Country and then Date
+    cols = df_additional.columns
+    df_additional = df_additional.sort_values(by=["CountryName", "Date"]).reset_index(
+        drop=True
+    )
+    cols_to_interpolate = ["ConfirmedDeaths"]
+    df_additional = df_additional.groupby("CountryName").apply(
+        lambda x: x[df_additional.columns.difference(cols_to_interpolate)].join(
+            x[cols_to_interpolate].interpolate(
+                method="linear", axis=0, limit_area="inside"
+            )
+        )
+    )[cols]
+
+    # ok that didn't do anything, but it was worth a try
+    # seems like it's time to merge this dataset with the other one
+    # first let's check how many countries from the our dataset are present in the additional one
+    temp = [
+        elem in df_additional["CountryName"].unique()
+        for elem in df["location"].unique()
+    ]
+
+    # that seems high enough, so we can actually use this dataset
+    # let's rename columns from the old dataset for merging
+    df_additional.rename(
+        columns={"CountryName": "location", "Date": "date"}, inplace=True
+    )
+    # we can drop redundant columns (we drop new_deaths/total_deaths, because the other dataset is more complete on these)
+    df.drop(
+        columns=["stringency_index", "iso_code", "new_deaths", "total_deaths"],
+        inplace=True,
+    )
+    df = df.merge(df_additional, on=["location", "date"])
+    # we have to recalculate new_deaths
+    df["new_deaths"] = (
+        df.groupby("location").apply(lambda x: x["ConfirmedDeaths"].diff()).to_numpy()
+    )
+
+    # looking good!
     return df
