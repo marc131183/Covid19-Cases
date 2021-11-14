@@ -336,9 +336,22 @@ def getData():
     )
     df = df.merge(df_additional, on=["location", "date"])
     # we have to recalculate new_deaths
-    df["new_deaths"] = (
-        df.groupby("location").apply(lambda x: x["ConfirmedDeaths"].diff()).to_numpy()
+    temp = (
+        df.groupby("location")
+        .apply(
+            lambda x: np.append(
+                x["ConfirmedDeaths"].iloc[1:2].to_numpy(),
+                x["ConfirmedDeaths"].diff().to_numpy()[1:],
+                axis=0,
+            )
+        )
+        .to_numpy()
     )
+    temp = [elem for sublist in temp for elem in sublist]
+    df["new_deaths"] = temp
+
+    # let's add the weekday for each row, this might be interesting to look at
+    df["weekday"] = df["date"].dt.dayofweek
 
     # looking good!
     return df
