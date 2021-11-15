@@ -10,7 +10,7 @@ from data_processing import getData
 
 app = dash.Dash(__name__)
 
-colors = {"background": "#111111", "text": "#7FDBFF"}
+colors = {"background": "#ede6d8", "text": "#1405eb"}
 
 df = getData()
 
