@@ -64,14 +64,7 @@ app.layout = html.Div(
                 labelStyle={'display': 'inline-block'}
             )
         ], style={'width': '48%', 'float': 'right', 'display': 'inline-block'}),
-
-        html.Hr(),
-        html.Details(
-            [
-                html.Summary("Contents of figure storage"),
-                dcc.Markdown(id="clientside-figure-json-px"),
-            ]
-        ),
+        
         dcc.Graph(id='indicator-graphic')
     ]
 )
@@ -130,15 +123,6 @@ def update_graph(xaxis_column_name, yaxis_column_name,
     Input("clientside-figure-store-px", "data"),
     Input("clientside-graph-scale-px", "value"),
 #)
-
-
-#@app.callback(
-    Output("clientside-figure-json-px", "children"),
-    Input("clientside-figure-store-px", "data"),
-#)
-#def generated_px_figure_json(data):
-    return "```\n" + json.dumps(data, indent=2) + "\n```"
-
 
 if __name__ == "__main__":
     app.run_server(debug=True)
