@@ -97,11 +97,19 @@ def getData():
     df.reset_index(drop=True, inplace=True)
 
     # for some reason total_cases is complete, but new_cases isn't so let's fix that real quick
-    miss_indices = df[df["new_cases"].isna()].index
-    df.loc[miss_indices, "new_cases"] = list(
-        df.iloc[miss_indices + 1]["total_cases"]
-        - np.array(df.iloc[miss_indices]["total_cases"])
+    temp = (
+        df.groupby("location")
+        .apply(
+            lambda x: np.append(
+                x["total_cases"].iloc[1:2].to_numpy(),
+                x["total_cases"].diff().to_numpy()[1:],
+                axis=0,
+            )
+        )
+        .to_numpy()
     )
+    temp = [elem for sublist in temp for elem in sublist]
+    df["new_cases"] = temp
 
     # also it seems that there are some columns where we simply have too many missing values for them to be useful, let's remove these
     cols_to_drop = [
@@ -353,5 +361,36 @@ def getData():
     # let's add the weekday for each row, this might be interesting to look at
     df["weekday"] = df["date"].dt.dayofweek
 
-    # looking good!
+    # let's look at the value ranges that we have now
+    df.describe()
+
+    # so for some reason we have a negative number of new_cases/new_deaths/.., this is obviously an error
+    # let's try to interpolate these
+    # first set them to NaN
+    numerical_cols = df.select_dtypes(include=np.number).columns.tolist()
+    cols_to_fix = df[numerical_cols].min(axis=0) < 0
+    cols_to_fix = [
+        name for name, need_fix in zip(cols_to_fix.index, cols_to_fix) if need_fix
+    ]
+    # need to add location for grouping
+    cols_to_fix = cols_to_fix + ["location"]
+    # set negative values to NaN
+    df[cols_to_fix[:-1]] = (
+        df[cols_to_fix].groupby("location").apply(lambda x: x.where(x >= 0, np.nan))
+    )
+    # now interpolate them
+    df = df.groupby("location").apply(
+        lambda x: x[df.columns.difference(cols_to_fix)].join(
+            x[cols_to_fix].interpolate(method="linear", axis=0, limit_area="inside")
+        )
+    )
+
+    # recompute total_cases, total_deaths
+    df[["total_cases", "total_deaths"]] = (
+        df[["location", "new_cases", "new_deaths"]]
+        .groupby("location")
+        .apply(lambda x: x.cumsum())[["new_cases", "new_deaths"]]
+        .to_numpy()
+    )
+
     return df
