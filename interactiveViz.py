@@ -107,7 +107,7 @@ def update_graph(
     xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, plot_type
 ):
 
-    if plot_type == "Scatter":
+    if plot_type == "Scatter":  # remember: only make some parameters available
 
         fig = px.scatter(
             df,
@@ -124,7 +124,7 @@ def update_graph(
             y=df[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
-            color="continent",  # enable the user to choose how to group
+            color="continent",  # remember: enable the user to choose how to group
         )
 
     else:
