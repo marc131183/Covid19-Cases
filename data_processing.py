@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats
 
 pd.set_option("display.max_columns", None)
 plt.rcParams["figure.figsize"] = (24, 12)
@@ -53,7 +54,12 @@ def getData():
         "human_development_index",
         "excess_mortality",
     ]
+
     df = df[attributes]
+
+    # now check which columns contain NaN values
+
+    # it's weird that continent contains NaNs and location doesn't, so let's take a look at that
 
     # let's store these rows which combine data of a continent in a seperate dataframe, so it doesn't give us any weird mistakes later/confuse us
     # before we do this we should be sure that really only these combined rows have NaNs
@@ -61,6 +67,8 @@ def getData():
     continent_df = df[df["continent"].isna()]
     # drop these rows from the original dataframe
     df = df[~df["continent"].isna()]
+
+    # we would expect that new_cases should be almost complete (because it's the most important attribute), so let's take a look at that
 
     # it seems that there are countries that don't have any values for new_cases or simply not enough values, these are obviously useless to us
     # lets drop all countries that have missing values for more than half of their entries for the column new_cases
@@ -96,6 +104,8 @@ def getData():
     # we removed rows, so we need to reset the index
     df.reset_index(drop=True, inplace=True)
 
+    # let's look at what percentage of values is still NaN for each column
+
     # for some reason total_cases is complete, but new_cases isn't so let's fix that real quick
     temp = (
         df.groupby("location")
@@ -121,6 +131,10 @@ def getData():
     ]
     df.drop(columns=cols_to_drop, inplace=True)
 
+    # let's try and fill the missing values for the remaining columns
+    # vaccinations numbers are very interesting to us so let's take a look at it
+    # for each country get the percentage of values that are not NaN for total_vaccinations
+
     # maybe the high number of missing values comes from leading NaNs? let's check that
     temp = df.copy()
     temp.reset_index(inplace=True)
@@ -128,6 +142,7 @@ def getData():
     first_valid_index = temp.groupby("location").apply(
         lambda x: x["total_vaccinations"].first_valid_index()
     )
+    (first_valid_index - first_index).to_frame().T
 
     # so it seems that there are a lot of leading NaNs, however for some countries we don't have any vaccination numbers, lets remove these countries
     temp = first_valid_index - first_index
@@ -171,6 +186,8 @@ def getData():
         ],
     ] = 0
 
+    # let's look at the percentage of missing values for columns again
+
     # it's looking a lot better now, but the ~50% missing values for new_tests/total_tests are really annoying because these are such interesting columns
     # lets's check for leading NaNs
     temp = df.copy()
@@ -192,9 +209,27 @@ def getData():
         "location"
     )
 
+    # unfortunately it's not zero for basically all of them, so we can't really do much here
+    # maybe looking at the percentage of missing values will help us somehow
+
+    # not really sure what to do with these
+    # we'll do some interpolation later for these (between first and last valid value for each country) and see to what extent that fixes it
+    # let's look at other columns that have a high percentage of missing values
+
+    # this looks similar to total_tests (either countries have a high number of non-NaN values (> 80%) or a low number (< 20%))
+    # also not sure what to do with these (we'll also interpolate it later)
+    # let's take a look at another column with a high percentage of NaN-values
+
+    # ok this is even more extreme now it's either 100% or 0% now, we can't really do anything here
+    # let's take a look at another column with a high percentage of NaN-values
+
+    # we can't really do anything here as well..
+    # so let's do some interpolation (we'll only interpolate between the first valid value and the last, because it would probably temper too much with the data)
+    # first we'll look at the percentage of missing values for each column again
+    cols = df.columns
+
     # since we're only gonna interpolate between the first and last valid value for each country, we can basically put each column in here and see to what extent it fixes something
     # we'll only interpolate the total_columns and add the missing values later for the new_columns
-    cols = df.columns
     cols_to_interpolate = [
         "total_deaths",
         "reproduction_rate",
@@ -234,6 +269,8 @@ def getData():
         )
         .to_numpy()
     )
+
+    # let's see how that affected the percentage of missing values for each column
 
     # it might be fine to use the average value of the continent for a country for a specific column if it's completly missing
     # (this only applies to some columns (columns that describe local factors and that we won't expect to change much over the time interval))
@@ -280,6 +317,8 @@ def getData():
             df[nan_indices]["continent"], col
         ].to_numpy()
 
+    # let's look at the missing values for each column again
+
     # except a few columns it's looking decent now, not sure what to do further with this dataset
 
     """
@@ -305,6 +344,10 @@ def getData():
     # we can also drop ConfirmedCases since that's complete in out other datset anyway
     # we might be able to use ConfirmedDeaths though, because there were missing values for that in our other dataset
     df_additional.drop(columns=["ConfirmedCases"], inplace=True)
+
+    # except for the flag attributes this looks very good, for most of them only 2% missing values
+    # E3, E4, H4 is said to not be updated anymore since August 2021 on the github repo, so that's where the relatively high number of missing values comes from
+    # let's check if the missing values come from the same countries
 
     # ok so it's well spread between countries
     # honestly this data set just looks really good, not really sure what to do
@@ -357,12 +400,34 @@ def getData():
     )
     temp = [elem for sublist in temp for elem in sublist]
     df["new_deaths"] = temp
+    df.head()
 
     # let's add the weekday for each row, this might be interesting to look at
     df["weekday"] = df["date"].dt.dayofweek
 
     # let's look at the value ranges that we have now
     df.describe()
+
+    # let's look for some outliers
+    # use rolling mean and std to identify them (add a constant term for small values)
+    cols_to_check = ["new_cases", "new_deaths", "new_tests"]
+    sums_of_these = ["total_cases", "ConfirmedDeaths", "total_tests"]
+    rolling = (
+        df[cols_to_check + ["location"]]
+        .groupby("location")
+        .apply(lambda x: x.rolling(30, min_periods=1).mean())
+        + 1000
+        + 4
+        * df[["new_cases", "new_deaths", "location"]]
+        .groupby("location")
+        .apply(lambda x: x.rolling(30, min_periods=1).std())
+    )
+    temp = df[cols_to_check] > rolling
+
+    outliers = temp[temp > 0].stack().index.tolist()
+    for elem in outliers:
+        # set all outliers to NaN, we'll interpolate them later
+        df.loc[elem[0], elem[1]] = np.nan
 
     # so for some reason we have a negative number of new_cases/new_deaths/.., this is obviously an error
     # let's try to interpolate these
@@ -372,6 +437,7 @@ def getData():
     cols_to_fix = [
         name for name, need_fix in zip(cols_to_fix.index, cols_to_fix) if need_fix
     ]
+    cols_to_fix = list(set(cols_to_fix + cols_to_check))
     # need to add location for grouping
     cols_to_fix = cols_to_fix + ["location"]
     # set negative values to NaN
@@ -384,12 +450,11 @@ def getData():
             x[cols_to_fix].interpolate(method="linear", axis=0, limit_area="inside")
         )
     )
-
-    # recompute total_cases, total_deaths
-    df[["total_cases", "total_deaths"]] = (
-        df[["location", "new_cases", "new_deaths"]]
+    # recompute total_cases, total_deaths, total_tests
+    df[sums_of_these] = (
+        df[["location"] + cols_to_check]
         .groupby("location")
-        .apply(lambda x: x.cumsum())[["new_cases", "new_deaths"]]
+        .apply(lambda x: x.cumsum())[cols_to_check]
         .to_numpy()
     )
 
