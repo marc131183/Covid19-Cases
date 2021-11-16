@@ -26,103 +26,77 @@ app.layout = html.Div(
     style={"backgroundColor": colors["background"]},
     children=[
         html.H1(
-            children="Overview of covid 19",
+            children="Overview of Covid-19",
             style={"textAlign": "center", "color": colors["text"]},
         ),
         html.Div(
             children="Historical data of covid 19 cases.",
             style={"textAlign": "center", "color": colors["text"]},
         ),
-        html.Div([
-            dcc.Dropdown(
-                id='xaxis-column',
-                options=[
-                {"label": elem[0].upper() + elem[1:], "value": elem} for elem in df.columns
-                ],
-                value='new_cases'
-            ),
-            dcc.RadioItems(
-                id='xaxis-type',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ], style={'width': '48%', 'display': 'inline-block'}),
-
-        html.Div([
-            dcc.Dropdown(
-                id='yaxis-column',
-                options=[
-                {"label": elem[0].upper() + elem[1:], "value": elem} for elem in df.columns
-                ],
-                value='location'
-            ),
-            dcc.RadioItems(
-                id='yaxis-type',
-                options=[{'label': i, 'value': i} for i in ['Linear', 'Log']],
-                value='Linear',
-                labelStyle={'display': 'inline-block'}
-            )
-        ], style={'width': '48%', 'float': 'right', 'display': 'inline-block'}),
-        
-        dcc.Graph(id='indicator-graphic')
-    ]
+        html.Div(
+            [
+                dcc.Dropdown(
+                    id="xaxis-column",
+                    options=[
+                        {"label": elem[0].upper() + elem[1:], "value": elem}
+                        for elem in df.columns
+                    ],
+                    value="location",
+                ),
+                dcc.RadioItems(
+                    id="xaxis-type",
+                    options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
+                    value="Linear",
+                    labelStyle={"display": "inline-block"},
+                ),
+            ],
+            style={"width": "48%", "display": "inline-block"},
+        ),
+        html.Div(
+            [
+                dcc.Dropdown(
+                    id="yaxis-column",
+                    options=[
+                        {"label": elem[0].upper() + elem[1:], "value": elem}
+                        for elem in df.columns
+                    ],
+                    value="new_cases",
+                ),
+                dcc.RadioItems(
+                    id="yaxis-type",
+                    options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
+                    value="Linear",
+                    labelStyle={"display": "inline-block"},
+                ),
+            ],
+            style={"width": "48%", "float": "right", "display": "inline-block"},
+        ),
+        dcc.Graph(id="indicator-graphic"),
+    ],
 )
 
+
 @app.callback(
-    Output('indicator-graphic', 'figure'),
-    Input('xaxis-column', 'value'),
-    Input('yaxis-column', 'value'),
-    Input('xaxis-type', 'value'),
-    Input('yaxis-type', 'value'))
-def update_graph(xaxis_column_name, yaxis_column_name,
-                 xaxis_type, yaxis_type):
+    Output("indicator-graphic", "figure"),
+    Input("xaxis-column", "value"),
+    Input("yaxis-column", "value"),
+    Input("xaxis-type", "value"),
+    Input("yaxis-type", "value"),
+)
+def update_graph(xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type):
 
-    fig = px.scatter(x=df[xaxis_column_name],
-                     y=df[yaxis_column_name])
+    fig = px.scatter(
+        df,
+        x=df[xaxis_column_name],
+        y=df[yaxis_column_name],
+        log_x=xaxis_type == "Log",
+        log_y=yaxis_type == "Log",
+    )
 
-    fig.update_layout(margin={'l': 40, 'b': 40, 't': 10, 'r': 0})
-
-    fig.update_xaxes(title=xaxis_column_name,
-                     type='linear' if xaxis_type == 'Linear' else 'log')
-
-    fig.update_yaxes(title=yaxis_column_name,
-                     type='linear' if yaxis_type == 'Linear' else 'log')
+    fig.update_layout(margin={"l": 40, "b": 40, "t": 10, "r": 0})
 
     return fig
 
-
-#@app.callback(
-    Output("clientside-figure-store-px", "data"),
-    Input("clientside-graph-indicator-px", "value"),
-    Input("clientside-graph-country-px", "value"),
-#)
-#def update_store_data(indicator, country):
-    # dff = df[df['location'] == country]
-    return [{"x": df[indicator], "y": df[country], "mode": "markers"}]
-
-
-#app.clientside_callback(
-    """
-    function(figure, scale) {
-        if(figure === undefined) {
-            return {'data': [], 'layout': {}};
-        }
-        const fig = Object.assign({}, figure, {
-            'layout': {
-                ...figure.layout,
-                'yaxis': {
-                    ...figure.layout.yaxis, type: scale
-                }
-             }
-        });
-        return fig;
-    }
-    """,
-    Output("clientside-graph-px", "figure"),
-    Input("clientside-figure-store-px", "data"),
-    Input("clientside-graph-scale-px", "value"),
-#)
 
 if __name__ == "__main__":
     app.run_server(debug=True)
