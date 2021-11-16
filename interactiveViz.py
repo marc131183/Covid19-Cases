@@ -5,6 +5,7 @@ import plotly.express as px
 import pandas as pd
 from dash.dependencies import Input, Output
 import json
+import numpy as np
 
 from data_processing import getData
 
@@ -12,7 +13,12 @@ app = dash.Dash(__name__)
 
 colors = {"background": "#ede6d8", "text": "#1405eb"}
 
-df = getData()
+# df = getData()
+
+# load only some of the data for faster updating
+df = pd.DataFrame(
+    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
+)
 
 fig = px.bar(df, x="location", y="new_cases", color="continent", barmode="group")
 
@@ -35,22 +41,16 @@ app.layout = html.Div(
         ),
         html.Div(
             [
-                dcc.Dropdown(
-                    id="xaxis-column",
-                    options=[
-                        {"label": elem[0].upper() + elem[1:], "value": elem}
-                        for elem in df.columns
-                    ],
-                    value="location",
-                ),
                 dcc.RadioItems(
-                    id="xaxis-type",
-                    options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
-                    value="Linear",
+                    id="plot_type",
+                    options=[
+                        {"label": i, "value": i} for i in ["Scatter", "Bar", "Line"]
+                    ],
+                    value="Scatter",
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={"width": "48%", "display": "inline-block"},
+            style={"width": "48%"},
         ),
         html.Div(
             [
@@ -69,20 +69,26 @@ app.layout = html.Div(
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={"width": "48%", "float": "right", "display": "inline-block"},
+            style={"width": "48%", "float": "down", "display": "inline-block"},
         ),
         html.Div(
             [
-                dcc.RadioItems(
-                    id="plot_type",
+                dcc.Dropdown(
+                    id="xaxis-column",
                     options=[
-                        {"label": i, "value": i} for i in ["Scatter", "Bar", "Line"]
+                        {"label": elem[0].upper() + elem[1:], "value": elem}
+                        for elem in df.columns
                     ],
-                    value="Scatter",
+                    value="location",
+                ),
+                dcc.RadioItems(
+                    id="xaxis-type",
+                    options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
+                    value="Linear",
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={"width": "48%", "float": "down", "display": "inline-block"},
+            style={"width": "48%", "float": "right", "display": "inline-block"},
         ),
         dcc.Graph(id="indicator-graphic"),
     ],
@@ -101,7 +107,7 @@ def update_graph(
     xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, plot_type
 ):
 
-    if plot_type == "Scatter":
+    if plot_type == "Scatter":  # remember: only make some parameters available
 
         fig = px.scatter(
             df,
@@ -118,7 +124,7 @@ def update_graph(
             y=df[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
-            color="continent",  # make the user choose how to group
+            color="continent",  # remember: enable the user to choose how to group
         )
 
     else:
