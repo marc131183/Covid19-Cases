@@ -40,8 +40,10 @@ def split_query(query):
         if character == '"':
             open_string = not open_string
             temp = temp + character
-        elif character != "" or open_string:
+        elif character != " " or open_string:
             temp = temp + character
+
+    query = temp
 
     brackets_open = 0
     sub_query = {"LHS": "", "RHS": "", "operator": "", "operator_type": "logical"}
@@ -101,6 +103,7 @@ def parse_sub_query(side):
     valid_operators = {
         "<=": operator.le,
         ">=": operator.ge,
+        "!=": operator.ne,
         "=": operator.eq,
         "<": operator.lt,
         ">": operator.gt,
@@ -118,7 +121,6 @@ def parse_sub_query(side):
     return sub
 
 
-# parse expression from left to right, ignoring any other rules
 def parse_expression(df_, expression):
     valid_operators = {
         "+": operator.add,
@@ -134,65 +136,107 @@ def parse_expression(df_, expression):
         "first": lambda x: x.iloc[0],
         "last": lambda x: x.iloc[-1],
     }
-    cur_op = None
-    out = None
 
-    i = 0
-    while i < len(expression):
-        if expression[i] in valid_operators:
-            cur_op = valid_operators[expression[i]]
-            i += 1
-        # found opening of column
-        elif expression[i] == "{":
-            op_to_apply = lambda x: x
-            # check if there is a columnn operator before
-            for col_op in valid_col_operators.keys():
-                if i - len(col_op) > 0 and expression[i - len(col_op) : i] == col_op:
-                    op_to_apply = valid_col_operators[col_op]
-            # find closing of columm between i and the end of the string
-            end_col = expression[i:].index("}") + i
-            col_name = expression[i + 1 : end_col]
-            if out is None:
-                out = op_to_apply(df_[col_name])
-            else:
-                out = cur_op(out, op_to_apply(df_[col_name]))
-            # set i to be behind closing of {column}
-            i = end_col + 1
-        # found opening of string value
-        elif expression[i] == '"':
-            # find closing of string
-            end_string = expression[i + 1 :].index('"') + i + 1
-            found_string = expression[i + 1 : end_string]
-            if out is None:
-                out = found_string
-            else:
-                out = cur_op(out, found_string)
-            # set i to be behind closing of string
-            i = end_string + 1
-        elif expression[i].isnumeric():
-            # if this is the end of the expression, this is also the end of this number
-            if i + 1 == len(expression):
-                number = float(expression[i])
-                if out is None:
-                    out = number
-                else:
-                    out = cur_op(out, number)
-                i += 1
-            # check how long the expression is numeric
-            for j in range(i + 1, len(expression) + 1):
-                if j == len(expression) or not expression[j].isnumeric():
-                    number = float(expression[i:j])
+    operators = []
+    sub_expressions = [""]
 
-                    if out is None:
-                        out = number
-                    else:
-                        out = cur_op(out, number)
-                    i = j
-                    break
+    # split expression between valid operators
+    for character in expression:
+        if character in valid_operators:
+            operators.append([character, 0])
+            sub_expressions.append("")
         else:
-            i += 1
+            sub_expressions[-1] += character
 
-    return out
+    # assign priorities to operators according to brackets found
+    brackets_open = 0
+    for i in range(len(sub_expressions) - 1):
+        # check if string is empty
+        if sub_expressions[i] != "":
+            # if there are brackets on opening and end, we can remove them
+            while sub_expressions[i][0] == "(" and sub_expressions[i][-1] == ")":
+                sub_expressions[i] = sub_expressions[i][1:-1]
+            brackets_open += sub_expressions[i].count("(")
+            brackets_open -= sub_expressions[i].count(")")
+            # update priority of the corresponding operator
+            operators[i][1] = brackets_open
+            # we won't need the brackets anymore, so we can remove them
+            sub_expressions[i] = sub_expressions[i].replace("(", "").replace(")", "")
+
+            # also remove brackets from last sub_expression
+            sub_expressions[-1] = sub_expressions[-1].replace("(", "").replace(")", "")
+
+    # parse sub_expressions
+    for i in range(len(sub_expressions)):
+        # check if it's empty, then we assign 0
+        if sub_expressions[i] == "":
+            sub_expressions[i] = 0
+        # if it contains {}, then it's a column
+        elif "{" in sub_expressions[i]:
+            cur_op = lambda x: x
+            # check if there is a valid col operator before
+            index_first_bracket = sub_expressions[i].index("{")
+            if index_first_bracket != 0:
+                cur_op = valid_col_operators[sub_expressions[i][:index_first_bracket]]
+            sub_expressions[i] = cur_op(
+                df_[sub_expressions[i][index_first_bracket + 1 : -1]]
+            )
+        # if it contains "", then it's a string
+        elif '"' in sub_expressions[i]:
+            # " should be at beginning and end, remove them
+            sub_expressions[i] = sub_expressions[i][1:-1]
+        elif sub_expressions[i].isnumeric():
+            sub_expressions[i] = float(sub_expressions[i])
+
+    # apply operators according to priorities
+    all_op_same = False
+    while len(sub_expressions) > 1:
+        # check if all operators have the same priority
+        if all_op_same or all([operators[0][1] == elem[1] for elem in operators]):
+            all_op_same = True
+            # do * and / before + and -
+            i = 0
+            while i < len(operators):
+                if operators[i][0] in ["*", "/"]:
+                    sub_expressions[i] = valid_operators[operators[i][0]](
+                        sub_expressions[i], sub_expressions[i + 1]
+                    )
+
+                    # remove operator and corresponding sub_expression (we combined 2 sub_expressions)
+                    del operators[i]
+                    del sub_expressions[i + 1]
+                else:
+                    i += 1
+
+            i = 0
+            while i < len(operators):
+                if operators[i][0] in ["+", "-"]:
+                    sub_expressions[i] = valid_operators[operators[i][0]](
+                        sub_expressions[i], sub_expressions[i + 1]
+                    )
+
+                    # remove operator and corresponding sub_expression (we combined 2 sub_expressions)
+                    del operators[i]
+                    del sub_expressions[i + 1]
+                else:
+                    i += 1
+        else:
+            # find index of operator with maximum priority
+            cur_max, cur_max_index = 0, 0
+            for i in range(len(operators)):
+                if operators[i][1] > cur_max:
+                    cur_max, cur_max_index = operators[i][1], i
+
+            # apply that operation
+            sub_expressions[cur_max_index] = valid_operators[
+                operators[cur_max_index][0]
+            ](sub_expressions[cur_max_index], sub_expressions[cur_max_index + 1])
+
+            # remove operator and corresponding sub_expression (we combined 2 sub_expressions)
+            del operators[cur_max_index]
+            del sub_expressions[cur_max_index + 1]
+
+    return sub_expressions[0]
 
 
 def resolve_query(df_, derived_query_structure):
@@ -225,7 +269,7 @@ def resolve_query(df_, derived_query_structure):
 )
 def display_query(query):
     if query != None:
-        processed_query = split_query(query.replace(" ", ""))
+        processed_query = split_query(query)
         df.groupby("location").apply(lambda x: resolve_query(x, processed_query))
         # print(json.dumps(processed_query, sort_keys=True, indent=4))
 
