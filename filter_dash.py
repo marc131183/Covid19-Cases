@@ -168,9 +168,11 @@ def parse_expression(df_, expression):
 
     # parse sub_expressions
     for i in range(len(sub_expressions)):
-        # check if it's empty, then we assign 0
+        # check if it's empty, then we assign 0 (for cases of the form x*-y pr x/-y)
         if sub_expressions[i] == "":
             sub_expressions[i] = 0
+            # we have to increase the priority of the corresponding operator, because otherwise it will be incorrect
+            operators[i][1] = np.inf
         # if it contains {}, then it's a column
         elif "{" in sub_expressions[i]:
             cur_op = lambda x: x
@@ -191,6 +193,7 @@ def parse_expression(df_, expression):
     # apply operators according to priorities
     all_op_same = False
     while len(sub_expressions) > 1:
+        print(sub_expressions, operators)
         # check if all operators have the same priority
         if all_op_same or all([operators[0][1] == elem[1] for elem in operators]):
             all_op_same = True
