@@ -38,13 +38,17 @@ def split_query(query):
     brackets_open = 0
     sub_query = {"LHS": "", "RHS": "", "operator": "", "operator_type": "logical"}
     logical_operators = {"and": np.logical_and, "or": np.logical_or}
+    quotation_marks = False
 
     for i, character in enumerate(query):
         if character == "(":
             brackets_open += 1
         elif character == ")":
             brackets_open -= 1
-        if brackets_open == 0:
+        elif character == '"':
+            quotation_marks = not quotation_marks
+        # if there are no brackets/quotation marks open, look for logical operators
+        if brackets_open == 0 and not quotation_marks:
             for op in logical_operators.keys():
                 # found logical operator that is not in brackets, split into LHS and RHS between it
                 if i + len(op) < len(query) and query[i : i + len(op)] == op:
@@ -53,13 +57,13 @@ def split_query(query):
                     sub_query["RHS"] = query[i + len(op) :]
 
                     # if the LHS/RHS contains subqueries, we need to split further
-                    if sub_query["LHS"].count("(") > 1:
+                    if any([op in sub_query["LHS"] for op in logical_operators.keys()]):
                         sub_query["LHS"] = split_query(sub_query["LHS"])
                     # if it is a single query, we can parse it
                     else:
                         sub_query["LHS"] = parse_sub_query(sub_query["LHS"])
 
-                    if sub_query["RHS"].count("(") > 1:
+                    if any([op in sub_query["LHS"] for op in logical_operators.keys()]):
                         sub_query["RHS"] = split_query(sub_query["RHS"])
                     else:
                         sub_query["RHS"] = parse_sub_query(sub_query["RHS"])
@@ -243,8 +247,10 @@ if __name__ == "__main__":
         nrows=1000,
     )
 
-    query = '{continent} = "Asia" and {new_cases} > 100'
-    should_be = (df["continent"] == "Asia") & (df["new_cases"] > 100)
+    query = "({new_cases} > (mean{new_cases} + 3 * std{new_cases})) or ({new_cases} < (mean{new_cases} - 3 * std{new_cases}))"
+    should_be = (
+        df["new_cases"] > df["new_cases"].mean() + 3 * df["new_cases"].std()
+    ) | (df["new_cases"] < df["new_cases"].mean() - 3 * df["new_cases"].std())
 
     processed_query = split_query(query)
 
