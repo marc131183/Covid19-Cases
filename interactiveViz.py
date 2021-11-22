@@ -40,9 +40,15 @@ app.layout = html.Div(
             children="Historical data of Covid-19 cases.",
             style={"textAlign": "center", "color": colors["text"]},
         ),
-        dcc.Input(id="filter-query-input", placeholder="Enter filter query"),
+        "Filter query:",
+        dcc.Input(
+            id="filter-query-input",
+            placeholder="Enter filter query",
+            style={"width": "15%", "height": "30px",},
+        ),
         html.Div(
             [
+                "Select plot type:",
                 dcc.RadioItems(
                     id="plot_type",
                     options=[
@@ -52,10 +58,31 @@ app.layout = html.Div(
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={"width": "48%"},
+            style={"width": "30%", "float": "right", "display": "inline-block",},
         ),
         html.Div(
             [
+                "Color by:",
+                dcc.Dropdown(
+                    id="grouping",
+                    placeholder="Choose how to color",
+                    options=[
+                        {"label": elem[0].upper() + elem[1:], "value": elem}
+                        for elem in df.columns
+                    ],
+                    value="continent",
+                ),
+            ],
+            style={
+                "width": "30%",
+                "float": "right",
+                "display": "inline-block",
+                "marginRight": "10px",
+            },
+        ),
+        html.Div(
+            [
+                "Y-parameter:",
                 dcc.Dropdown(
                     id="yaxis-column",
                     options=[
@@ -63,6 +90,7 @@ app.layout = html.Div(
                         for elem in df.columns
                     ],
                     value="new_cases",
+                    # multi=True,
                 ),
                 dcc.RadioItems(
                     id="yaxis-type",
@@ -75,6 +103,7 @@ app.layout = html.Div(
         ),
         html.Div(
             [
+                "X-parameter:",
                 dcc.Dropdown(
                     id="xaxis-column",
                     options=[
@@ -82,6 +111,7 @@ app.layout = html.Div(
                         for elem in df.columns
                     ],
                     value="location",
+                    # multi=True,
                 ),
                 dcc.RadioItems(
                     id="xaxis-type",
@@ -104,10 +134,17 @@ app.layout = html.Div(
     Input("xaxis-type", "value"),
     Input("yaxis-type", "value"),
     Input("plot_type", "value"),
+    Input("grouping", "value"),
     Input("filter-query-input", "value"),
 )
 def update_graph(
-    xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, plot_type, query
+    xaxis_column_name,
+    yaxis_column_name,
+    xaxis_type,
+    yaxis_type,
+    plot_type,
+    grouping,
+    query,
 ):
     if query is None:
         df_ = df
@@ -125,6 +162,7 @@ def update_graph(
             y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
+            color=df[grouping],
         )
 
     elif plot_type == "Bar":
@@ -134,7 +172,7 @@ def update_graph(
             y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
-            color="continent",  # remember: enable the user to choose how to group
+            color=df[grouping],
         )
 
     else:
@@ -144,6 +182,7 @@ def update_graph(
             y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
+            color=df[grouping],
         )
 
     fig.update_layout(margin={"l": 40, "b": 40, "t": 20, "r": 0})
