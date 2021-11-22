@@ -1,3 +1,4 @@
+import enum
 import dash
 from dash.dependencies import Input, Output
 from dash import dash_table
@@ -8,28 +9,6 @@ import pandas as pd
 import json
 import numpy as np
 import operator
-
-df = pd.read_csv(
-    "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv",
-    parse_dates=["date"],
-    nrows=1000,
-)
-
-app = dash.Dash(__name__)
-
-app.layout = html.Div(
-    [
-        html.Br(),
-        dcc.Input(id="filter-query-input", placeholder="Enter filter query"),
-        html.Hr(),
-        dash_table.DataTable(
-            id="datatable",
-            columns=[{"name": i, "id": i, "deletable": True} for i in df.columns],
-            data=df.to_dict("records"),
-            page_size=15,
-        ),
-    ]
-)
 
 
 def split_query(query):
@@ -44,55 +23,61 @@ def split_query(query):
             temp = temp + character
 
     query = temp
+    brackets_open = 0
+
+    # remove outer brackets, if they are from one pair, e.g. ((x > 0) or (y = 0)) is converted to (x > 0) or (y = 0)
+    has_outer_brackets = True
+    while has_outer_brackets:
+        if len(query) > 2 and query[0] == "(" and query[-1] == ")":
+            for i, character in enumerate(query):
+                if character == "(":
+                    brackets_open += 1
+                elif character == ")":
+                    brackets_open -= 1
+                    if brackets_open == 0:
+                        if i == len(query) - 1:
+                            query = query[1:-1]
+                        else:
+                            has_outer_brackets = False
+                            break
+        else:
+            has_outer_brackets = False
 
     brackets_open = 0
     sub_query = {"LHS": "", "RHS": "", "operator": "", "operator_type": "logical"}
-    split = []
+    logical_operators = {"and": np.logical_and, "or": np.logical_or}
 
-    # remove outer brackets
-    while (
-        len(query) > 4
-        and query[0] == "("
-        and query[1] == "("
-        and query[-1] == ")"
-        and query[-2] == ")"
-    ):
-        query = query[1:-1]
-
-    # query should have a LHS and RHS marked by brackets and the operator is between them
-    # query should look like this: (*) and/or *
     for i, character in enumerate(query):
         if character == "(":
-            if brackets_open == 0 and len(split) == 1:
-                split.append(i)
-                break
             brackets_open += 1
         elif character == ")":
             brackets_open -= 1
-            if brackets_open == 0:
-                split.append(i)
+        if brackets_open == 0:
+            for op in logical_operators.keys():
+                # found logical operator that is not in brackets
+                if i + len(op) < len(query) and query[i : i + len(op)] == op:
+                    sub_query["LHS"] = query[:i]
+                    sub_query["operator"] = logical_operators[op]
+                    sub_query["RHS"] = query[i + len(op) :]
 
-    # if it only contains a LHS
-    if len(split) == 1:
-        sub_query["operator_type"] = "single"
-        sub_query["LHS"] = query
-        sub_query["LHS"] = parse_sub_query(sub_query["LHS"])
-    else:
-        sub_query["LHS"] = query[: split[0] + 1]
-        sub_query["RHS"] = query[split[1] :]
-        sub_query["operator"] = query[split[0] + 1 : split[1]]
+                    # if the LHS/RHS contains subqueries, we need to split further
+                    if sub_query["LHS"].count("(") > 1:
+                        sub_query["LHS"] = split_query(sub_query["LHS"])
+                    # if it is a single query, we can parse it
+                    else:
+                        sub_query["LHS"] = parse_sub_query(sub_query["LHS"])
 
-        # if the query contains subqueries, we need to split further
-        if sub_query["LHS"].count("(") > 1:
-            sub_query["LHS"] = split_query(sub_query["LHS"])
-        # it's now a single subquery, we can parse it
-        else:
-            sub_query["LHS"] = parse_sub_query(sub_query["LHS"])
+                    if sub_query["RHS"].count("(") > 1:
+                        sub_query["RHS"] = split_query(sub_query["RHS"])
+                    else:
+                        sub_query["RHS"] = parse_sub_query(sub_query["RHS"])
 
-        if sub_query["RHS"].count("(") > 1:
-            sub_query["RHS"] = split_query(sub_query["RHS"])
-        else:
-            sub_query["RHS"] = parse_sub_query(sub_query["RHS"])
+                    return sub_query
+
+    # we went through the whole query but didn't find any logical operators, so that means it is a single query
+    sub_query["operator_type"] = "single"
+    sub_query["LHS"] = query
+    sub_query["LHS"] = parse_sub_query(sub_query["LHS"])
 
     return sub_query
 
@@ -193,7 +178,6 @@ def parse_expression(df_, expression):
     # apply operators according to priorities
     all_op_same = False
     while len(sub_expressions) > 1:
-        print(sub_expressions, operators)
         # check if all operators have the same priority
         if all_op_same or all([operators[0][1] == elem[1] for elem in operators]):
             all_op_same = True
@@ -253,33 +237,22 @@ def resolve_query(df_, derived_query_structure):
         return resolve_query(df_, derived_query_structure["LHS"])
 
     if derived_query_structure["operator_type"] == "logical":
-        if derived_query_structure["operator"] == "and":
-            return np.logical_and(
-                resolve_query(df_, derived_query_structure["LHS"]),
-                resolve_query(df_, derived_query_structure["RHS"]),
-            )
-        elif derived_query_structure["operator"] == "or":
-            return np.logical_or(
-                resolve_query(df_, derived_query_structure["LHS"]),
-                resolve_query(df_, derived_query_structure["RHS"]),
-            )
-
-
-@app.callback(
-    Output("datatable", "data"),
-    Output("datatable", "columns"),
-    Input("filter-query-input", "value"),
-)
-def display_query(query):
-    if query != None:
-        processed_query = split_query(query)
-        df.groupby("location").apply(lambda x: resolve_query(x, processed_query))
-        # print(json.dumps(processed_query, sort_keys=True, indent=4))
-
-    return df.to_dict("records"), [
-        {"name": i, "id": i, "deletable": True} for i in df.columns
-    ]
+        return derived_query_structure["operator"](
+            resolve_query(df_, derived_query_structure["LHS"]),
+            resolve_query(df_, derived_query_structure["RHS"]),
+        )
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    df = pd.read_csv(
+        "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv",
+        parse_dates=["date"],
+        nrows=1000,
+    )
+
+    query = '{continent} = "Asia" and {new_cases} > 100'
+    should_be = (df["continent"] == "Asia") & (df["new_cases"] > 100)
+
+    processed_query = split_query(query)
+
+    print(np.array(should_be == resolve_query(df, processed_query)).all())
