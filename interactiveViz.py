@@ -6,6 +6,7 @@ import pandas as pd
 from dash.dependencies import Input, Output
 import json
 import numpy as np
+import filter_dash
 
 from data_processing import getData
 
@@ -39,6 +40,7 @@ app.layout = html.Div(
             children="Historical data of Covid-19 cases.",
             style={"textAlign": "center", "color": colors["text"]},
         ),
+        dcc.Input(id="filter-query-input", placeholder="Enter filter query"),
         html.Div(
             [
                 dcc.RadioItems(
@@ -102,26 +104,34 @@ app.layout = html.Div(
     Input("xaxis-type", "value"),
     Input("yaxis-type", "value"),
     Input("plot_type", "value"),
+    Input("filter-query-input", "value"),
 )
 def update_graph(
-    xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, plot_type
+    xaxis_column_name, yaxis_column_name, xaxis_type, yaxis_type, plot_type, query
 ):
+    if query is None:
+        df_ = df
+    else:
+        derived_query_structure = filter_dash.split_query(query)
+        df_ = df.groupby("location").apply(
+            lambda x: x[filter_dash.resolve_query(x, derived_query_structure)]
+        )
 
     if plot_type == "Scatter":  # remember: only make some parameters available
 
         fig = px.scatter(
-            df,
-            x=df[xaxis_column_name],
-            y=df[yaxis_column_name],
+            df_,
+            x=df_[xaxis_column_name],
+            y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
         )
 
     elif plot_type == "Bar":
         fig = px.bar(
-            df,
-            x=df[xaxis_column_name],
-            y=df[yaxis_column_name],
+            df_,
+            x=df_[xaxis_column_name],
+            y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
             color="continent",  # remember: enable the user to choose how to group
@@ -129,9 +139,9 @@ def update_graph(
 
     else:
         fig = px.line(
-            df,
-            x=df[xaxis_column_name],
-            y=df[yaxis_column_name],
+            df_,
+            x=df_[xaxis_column_name],
+            y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
         )
