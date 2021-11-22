@@ -1,12 +1,4 @@
-import enum
-import dash
-from dash.dependencies import Input, Output
-from dash import dash_table
-from dash import dcc
-from dash import html
-from numpy import split
 import pandas as pd
-import json
 import numpy as np
 import operator
 
@@ -54,7 +46,7 @@ def split_query(query):
             brackets_open -= 1
         if brackets_open == 0:
             for op in logical_operators.keys():
-                # found logical operator that is not in brackets
+                # found logical operator that is not in brackets, split into LHS and RHS between it
                 if i + len(op) < len(query) and query[i : i + len(op)] == op:
                     sub_query["LHS"] = query[:i]
                     sub_query["operator"] = logical_operators[op]
@@ -74,7 +66,7 @@ def split_query(query):
 
                     return sub_query
 
-    # we went through the whole query but didn't find any logical operators, so that means it is a single query
+    # we went through the whole query but didn't find any logical operators that weren't in brackets, so that means it is a single query
     sub_query["operator_type"] = "single"
     sub_query["LHS"] = query
     sub_query["LHS"] = parse_sub_query(sub_query["LHS"])
