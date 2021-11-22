@@ -116,6 +116,7 @@ def parse_expression(df_, expression):
     valid_col_operators = {
         "mean": np.mean,
         "median": np.median,
+        "std": np.std,
         "max": np.max,
         "min": np.min,
         "first": lambda x: x.iloc[0],
