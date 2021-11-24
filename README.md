@@ -8,14 +8,14 @@ The visualization tool comes with an option to filter data, before visualizing i
 
       {continent} = "Asia"
 
-- Query 2: Get all countries that are either in Europe or have new a population of 10000000 or bigger  
+- Query 2: Get all countries that are either in Europe or have a population of 10000000 or bigger  
 
       {continent} = "Europe" or {population} >= 10000000
 
 As one might have observed, columns should be put into curly brackets: {column_name}. Column names can be taken out of the visualization tool. Names should be put into quotation marks: "Name". Numbers can be put in without using any extra notation. And expressions should be linked by and/or.  
 More examples:
 
-- Query 3: Get all countries that are in North- or South America and have a human development index of smaller than 30  
+- Query 3: Get all countries that are either in North- or South America and have a human development index of smaller than 30  
 
       ({continent} = "North America" or {continent} = "South America") and {human_development_index} < 30
 
