@@ -9,17 +9,21 @@ import numpy as np
 import filter_dash
 
 from data_processing import getData
+from predict import Model
 
 app = dash.Dash(__name__)
 
 colors = {"background": "#ede6d8", "text": "#1405eb"}
 
-# df = getData()
+df = getData()
 
 # load only some of the data for faster updating
-df = pd.DataFrame(
-    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
-)
+# df = pd.DataFrame(
+#    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
+# )
+
+model = Model(df)
+df_predict = model.predict("Norway")
 
 fig = px.bar(df, x="location", y="new_cases", color="continent", barmode="group")
 
@@ -52,7 +56,8 @@ app.layout = html.Div(
                 dcc.RadioItems(
                     id="plot_type",
                     options=[
-                        {"label": i, "value": i} for i in ["Scatter", "Bar", "Line"]
+                        {"label": i, "value": i}
+                        for i in ["Scatter", "Bar", "Line", "Predict"]
                     ],
                     value="Scatter",
                     labelStyle={"display": "inline-block"},
@@ -70,7 +75,6 @@ app.layout = html.Div(
                         {"label": elem[0].upper() + elem[1:], "value": elem}
                         for elem in df.columns
                     ],
-                    value="continent",
                 ),
             ],
             style={
@@ -85,11 +89,11 @@ app.layout = html.Div(
                 "Y-parameter:",
                 dcc.Dropdown(
                     id="yaxis-column",
+                    placeholder="Choose a y-parameter",
                     options=[
                         {"label": elem[0].upper() + elem[1:], "value": elem}
                         for elem in df.columns
                     ],
-                    value="new_cases",
                     # multi=True,
                 ),
                 dcc.RadioItems(
@@ -106,11 +110,11 @@ app.layout = html.Div(
                 "X-parameter:",
                 dcc.Dropdown(
                     id="xaxis-column",
+                    placeholder="Choose a x-parameter",
                     options=[
                         {"label": elem[0].upper() + elem[1:], "value": elem}
                         for elem in df.columns
                     ],
-                    value="location",
                     # multi=True,
                 ),
                 dcc.RadioItems(
@@ -146,6 +150,10 @@ def update_graph(
     grouping,
     query,
 ):
+
+    if xaxis_column_name == None or yaxis_column_name == None:
+        return {}
+
     if query is None:
         df_ = df
     else:
@@ -154,15 +162,15 @@ def update_graph(
             lambda x: x[filter_dash.resolve_query(x, derived_query_structure)]
         )
 
-    if plot_type == "Scatter":  # remember: only make some parameters available
+    if plot_type == "Scatter":  # remember: only make some parameters available?
 
         fig = px.scatter(
             df_,
-            x=df_[xaxis_column_name],
+            x=df_[xaxis_column_name],  # remember: make available multiple parameters
             y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
-            color=df[grouping],
+            color=(df[grouping] if grouping != None else None),
         )
 
     elif plot_type == "Bar":
@@ -172,17 +180,26 @@ def update_graph(
             y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
-            color=df[grouping],
+            color=(df[grouping] if grouping != None else None),
         )
 
-    else:
+    elif plot_type == "Line":
         fig = px.line(
             df_,
             x=df_[xaxis_column_name],
             y=df_[yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
-            color=df[grouping],
+            color=(df[grouping] if grouping != None else None),
+        )
+
+    else:
+        fig = px.line(  # remember: fix prediction
+            df_predict,
+            x=df_predict["date"],
+            y=df_predict["new_cases"],
+            log_x=xaxis_type == "Log",
+            log_y=yaxis_type == "Log",
         )
 
     fig.update_layout(margin={"l": 40, "b": 40, "t": 20, "r": 0})
