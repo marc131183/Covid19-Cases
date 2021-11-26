@@ -94,7 +94,7 @@ app.layout = html.Div(
                         {"label": elem[0].upper() + elem[1:], "value": elem}
                         for elem in df.columns
                     ],
-                    # multi=True,
+                    multi=True,
                 ),
                 dcc.RadioItems(
                     id="yaxis-type",
@@ -154,7 +154,7 @@ def update_graph(
     if xaxis_column_name == None or yaxis_column_name == None:
         return {}
 
-    if query is None:
+    if query is None:  # remember: add options for filter and a country filter
         df_ = df
     else:
         derived_query_structure = filter_dash.split_query(query)
@@ -163,11 +163,10 @@ def update_graph(
         )
 
     if plot_type == "Scatter":  # remember: only make some parameters available?
-
         fig = px.scatter(
             df_,
-            x=df_[xaxis_column_name],  # remember: make available multiple parameters
-            y=df_[yaxis_column_name],
+            x=df_[xaxis_column_name],
+            y=[df_[ycolumn] for ycolumn in yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
             color=(df[grouping] if grouping != None else None),
@@ -177,7 +176,7 @@ def update_graph(
         fig = px.bar(
             df_,
             x=df_[xaxis_column_name],
-            y=df_[yaxis_column_name],
+            y=[df_[ycolumn] for ycolumn in yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
             color=(df[grouping] if grouping != None else None),
@@ -187,7 +186,7 @@ def update_graph(
         fig = px.line(
             df_,
             x=df_[xaxis_column_name],
-            y=df_[yaxis_column_name],
+            y=[df_[ycolumn] for ycolumn in yaxis_column_name],
             log_x=xaxis_type == "Log",
             log_y=yaxis_type == "Log",
             color=(df[grouping] if grouping != None else None),
