@@ -186,6 +186,7 @@ def update_graph(
                 df_[yaxis_column_name[1]].mean(),
             )
             # Add traces
+            # markers https://plotly.com/python/marker-style/
             for i, yaxis in enumerate(yaxis_column_name):
                 if i == 0 or i == 1:
                     if plot_type == "Scatter":

@@ -16,7 +16,7 @@ scatter plot attributes for x/y: location, continent, date, total cases, total_d
 
 
 not done - random line when showing 2 countries
-not done - if second attribute selected, show new axis on the left, if more are selected, show them on the axis with similar magnitude
+done - if second attribute selected, show new axis on the left, if more are selected, show them on the axis with similar magnitude
 not done - ask di, if current filtering system is okay, if yes then change columns of df to all start with uppercase letter and increase box size for query
 not done - sort parameters for axis selection
 not done - add location attribute to grouped df
