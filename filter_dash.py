@@ -176,9 +176,7 @@ def parse_expression(df_, expression):
             # check if it's a date in the given format: "DD-MM-YYYY"
             try:
                 sub_expressions[i] = datetime.strptime(sub_expressions[i], "%d-%m-%Y")
-                print("right format")
             except ValueError:
-                print("wrong format")
                 pass
         elif sub_expressions[i].isnumeric():
             sub_expressions[i] = float(sub_expressions[i])
