@@ -74,9 +74,9 @@ class Model:
         self.df.fillna(self.df.mean(), inplace=True)
 
         trends = list(
-            self.df.groupby("location").apply(
+            self.df.groupby("Location").apply(
                 lambda x: getTrendForAll(
-                    (x["new_cases"] * self.scale / x["population"]).to_numpy(),
+                    (x["New_cases"] * self.scale / x["Population"]).to_numpy(),
                     self.window_size,
                 )
             )
@@ -84,24 +84,24 @@ class Model:
         trends = [elem for sublist in trends for elem in sublist]
         self.df["trend"] = trends
 
-        non_numerical_cols = ["location", "date", "weekday", "continent", "CountryCode"]
+        non_numerical_cols = ["Location", "Date", "Weekday", "Continent", "CountryCode"]
         self.diff_cols = self.df.columns.difference(["trend"] + non_numerical_cols)
 
-        self.df = add_attribute(self.df, "new_cases", self.k)
+        self.df = add_attribute(self.df, "New_cases", self.k)
 
         split = 0.6, 0.2, 0.2
-        train_data = self.df.groupby("location").apply(
+        train_data = self.df.groupby("Location").apply(
             lambda x: x[
-                (x["date"] > x["date"].min() + pd.Timedelta(self.k, "days"))
+                (x["Date"] > x["Date"].min() + pd.Timedelta(self.k, "days"))
                 & (
-                    x["date"]
-                    < x["date"].max()
+                    x["Date"]
+                    < x["Date"].max()
                     - pd.Timedelta(self.window_size, "days")
                     - (
                         (
-                            x["date"].max()
+                            x["Date"].max()
                             - pd.Timedelta(self.window_size, "days")
-                            - (x["date"].min() + pd.Timedelta(self.k, "days"))
+                            - (x["Date"].min() + pd.Timedelta(self.k, "days"))
                         )
                         * (split[1] + split[2])
                     )
@@ -114,22 +114,22 @@ class Model:
         return train_data_X, train_data_y
 
     def predict(self, country, num_last_days=90):
-        temp = self.df[self.df["location"] == country]
+        temp = self.df[self.df["Location"] == country]
         pred = self.reg.predict(temp.iloc[-2:-1][self.diff_cols])
         pred_x = [
-            temp.iloc[-1]["date"] + pd.Timedelta(i, "days")
+            temp.iloc[-1]["Date"] + pd.Timedelta(i, "days")
             for i in range(self.window_size + 1)
         ]
         # convert prediction into actual values
-        pred_y = temp.iloc[-1]["new_cases"] + np.arange(self.window_size + 1) * pred
+        pred_y = temp.iloc[-1]["New_cases"] + np.arange(self.window_size + 1) * pred
         hist = temp[
             (
-                temp["date"]
-                >= temp.iloc[-1]["date"] - pd.Timedelta(num_last_days, "days")
+                temp["Date"]
+                >= temp.iloc[-1]["Date"] - pd.Timedelta(num_last_days, "days")
             )
         ]
 
-        return pred_x, pred_y, hist["date"], hist["new_cases"]
+        return pred_x, pred_y, hist["Date"], hist["New_cases"]
 
 
 if __name__ == "__main__":
