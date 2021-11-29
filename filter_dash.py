@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import operator
+from datetime import date, datetime
 
 
 def split_query(query):
@@ -122,9 +123,12 @@ def parse_expression(df_, expression):
     operators = []
     sub_expressions = [""]
 
+    string_open = False
     # split expression between valid operators
     for character in expression:
-        if character in valid_operators:
+        if character == '"':
+            string_open = not string_open
+        if character in valid_operators and not string_open:
             operators.append([character, 0])
             sub_expressions.append("")
         else:
@@ -150,7 +154,7 @@ def parse_expression(df_, expression):
 
     # parse sub_expressions
     for i in range(len(sub_expressions)):
-        # check if it's empty, then we assign 0 (for cases of the form x*-y pr x/-y)
+        # check if it's empty, then we assign 0 (for cases of the form x*-y or x/-y)
         if sub_expressions[i] == "":
             sub_expressions[i] = 0
             # we have to increase the priority of the corresponding operator, because otherwise it will be incorrect
@@ -169,6 +173,13 @@ def parse_expression(df_, expression):
         elif '"' in sub_expressions[i]:
             # " should be at beginning and end, remove them
             sub_expressions[i] = sub_expressions[i][1:-1]
+            # check if it's a date in the given format: "DD-MM-YYYY"
+            try:
+                sub_expressions[i] = datetime.strptime(sub_expressions[i], "%d-%m-%Y")
+                print("right format")
+            except ValueError:
+                print("wrong format")
+                pass
         elif sub_expressions[i].isnumeric():
             sub_expressions[i] = float(sub_expressions[i])
 
@@ -247,10 +258,10 @@ if __name__ == "__main__":
         nrows=1000,
     )
 
-    query = "({new_cases} > (mean{new_cases} + 3 * std{new_cases})) or ({new_cases} < (mean{new_cases} - 3 * std{new_cases}))"
-    should_be = (
-        df["new_cases"] > df["new_cases"].mean() + 3 * df["new_cases"].std()
-    ) | (df["new_cases"] < df["new_cases"].mean() - 3 * df["new_cases"].std())
+    query = '{date} > "1-11-2021" and {continent}= "Asia"'
+    should_be = (df["date"] > datetime.strptime("2021-11-01", "%Y-%m-%d")) & (
+        df["continent"] == "Asia"
+    )
 
     processed_query = split_query(query)
 
