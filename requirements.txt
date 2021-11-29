@@ -17,8 +17,8 @@ scatter plot attributes for x/y: location, continent, date, total cases, total_d
 
 not done - random line when showing 2 countries
 done - if second attribute selected, show new axis on the left, if more are selected, show them on the axis with similar magnitude
-not done - ask di, if current filtering system is okay, if yes then change columns of df to all start with uppercase letter and increase box size for query
-not done - sort parameters for axis selection
+not done - ask di, if current filtering system is okay, if yes then increase box size for query
+done - sort parameters for axis selection
 not done - add location attribute to grouped df
 not done - disable linear/log selection if column type is non-numerical
 done - add filtering by daterange
@@ -27,5 +27,6 @@ not done - align selection boxes
 not done - increase font size of title, update secondary title
 not done - add information box on the bottom, giving info about: column descriptions, (query examples), if user hovers over datapoint give information about it (e.g. max(new_cases), mean, date, country in general, choose color for one specific country, change color for all other countries)
 not done - think about design of page
+not done - fix coloring for multiple y-parameters?
 
 not done - after all of this, think about more plot types to add

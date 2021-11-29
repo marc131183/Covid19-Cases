@@ -19,6 +19,10 @@ colors = {"background": "#ede6d8", "text": "#1405eb"}
 
 df = getData()
 
+df = df.rename(columns={elem: elem[0].upper() + elem[1:] for elem in df.columns})
+df = df.sort_index(axis=1)
+
+
 # load only some of the data for faster updating
 # df = pd.DataFrame(
 #    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
@@ -27,7 +31,7 @@ df = getData()
 model = Model(df)
 df_predict = model.predict("Norway")
 
-fig = px.bar(df, x="location", y="new_cases", color="continent", barmode="group")
+fig = px.bar(df, x="Location", y="New_cases", color="Continent", barmode="group")
 
 fig.update_layout(
     plot_bgcolor=colors["background"],
@@ -50,10 +54,7 @@ app.layout = html.Div(
         dcc.Input(
             id="filter-query-input",
             placeholder="Enter filter query",
-            style={
-                "width": "15%",
-                "height": "30px",
-            },
+            style={"width": "15%", "height": "30px",},
         ),
         html.Div(
             [
@@ -68,11 +69,7 @@ app.layout = html.Div(
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={
-                "width": "30%",
-                "float": "right",
-                "display": "inline-block",
-            },
+            style={"width": "30%", "float": "right", "display": "inline-block",},
         ),
         html.Div(
             [
@@ -99,10 +96,7 @@ app.layout = html.Div(
                 dcc.Dropdown(
                     id="yaxis-column",
                     placeholder="Choose a y-parameter",
-                    options=[
-                        {"label": elem[0].upper() + elem[1:], "value": elem}
-                        for elem in df.columns
-                    ],
+                    options=[{"label": elem, "value": elem} for elem in df.columns],
                     multi=True,
                 ),
                 dcc.RadioItems(
@@ -120,10 +114,7 @@ app.layout = html.Div(
                 dcc.Dropdown(
                     id="xaxis-column",
                     placeholder="Choose a x-parameter",
-                    options=[
-                        {"label": elem[0].upper() + elem[1:], "value": elem}
-                        for elem in df.columns
-                    ],
+                    options=[{"label": elem, "value": elem} for elem in df.columns],
                     # multi=True,
                 ),
                 dcc.RadioItems(
@@ -163,11 +154,13 @@ def update_graph(
     if xaxis_column_name == None or yaxis_column_name == None:
         return {}
 
-    if query is None:  # remember: add options for filter and a country filter
-        df_ = df
+    if (
+        query is None or query == ""
+    ):  # remember: add options for filter and a country filter
+        df_ = df.copy()
     else:
         derived_query_structure = filter_dash.split_query(query)
-        df_ = df.groupby("location").apply(
+        df_ = df.groupby("Location").apply(
             lambda x: x[filter_dash.resolve_query(x, derived_query_structure)]
         )
 
@@ -211,11 +204,7 @@ def update_graph(
                         )
                     else:
                         fig.add_trace(
-                            plot_selected(
-                                x=xaxis_data,
-                                y=df_[yaxis],
-                                name=str(yaxis),
-                            ),
+                            plot_selected(x=xaxis_data, y=df_[yaxis], name=str(yaxis),),
                             secondary_y=i == 1,
                         )
                 else:
@@ -249,11 +238,7 @@ def update_graph(
                         )
                     else:
                         fig.add_trace(
-                            plot_selected(
-                                x=xaxis_data,
-                                y=cur_data,
-                                name=str(yaxis),
-                            ),
+                            plot_selected(x=xaxis_data, y=cur_data, name=str(yaxis),),
                             secondary_y=add_to_secondary,
                         )
                     if add_to_secondary:
@@ -292,7 +277,7 @@ def update_graph(
                 y=[df_[ycolumn] for ycolumn in yaxis_column_name],
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df[grouping] if grouping != None else None),
+                color=(df_[grouping] if grouping != None else None),
             )
 
         elif plot_type == "Bar":
@@ -302,7 +287,7 @@ def update_graph(
                 y=[df_[ycolumn] for ycolumn in yaxis_column_name],
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df[grouping] if grouping != None else None),
+                color=(df_[grouping] if grouping != None else None),
             )
 
         elif plot_type == "Line":
@@ -312,7 +297,7 @@ def update_graph(
                 y=[df_[ycolumn] for ycolumn in yaxis_column_name],
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df[grouping] if grouping != None else None),
+                color=(df_[grouping] if grouping != None else None),
             )
 
         else:
