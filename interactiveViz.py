@@ -56,7 +56,7 @@ app.layout = html.Div(
             id="filter-query-input",
             placeholder="Enter filter query",
             style={
-                "width": "15%",
+                "width": "30%",
                 "height": "30px",
             },
         ),
@@ -288,7 +288,7 @@ def update_graph(
                 color=(df_[grouping] if grouping != None else None),
             )
 
-        else:
+        elif plot_type == "Predict":
             fig = px.line(  # remember: fix prediction
                 df_predict,
                 x=df_predict["date"],
