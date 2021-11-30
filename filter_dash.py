@@ -64,7 +64,7 @@ def split_query(query):
                     else:
                         sub_query["LHS"] = parse_sub_query(sub_query["LHS"])
 
-                    if any([op in sub_query["LHS"] for op in logical_operators.keys()]):
+                    if any([op in sub_query["RHS"] for op in logical_operators.keys()]):
                         sub_query["RHS"] = split_query(sub_query["RHS"])
                     else:
                         sub_query["RHS"] = parse_sub_query(sub_query["RHS"])
@@ -253,12 +253,14 @@ if __name__ == "__main__":
     df = pd.read_csv(
         "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv",
         parse_dates=["date"],
-        nrows=1000,
+        # nrows=1000,
     )
 
-    query = '{date} > "1-11-2021" and {continent}= "Asia"'
-    should_be = (df["date"] > datetime.strptime("2021-11-01", "%Y-%m-%d")) & (
-        df["continent"] == "Asia"
+    query = (
+        '({location} = "Norway" or {location} = "Germany") and {date} > "20-11-2021"'
+    )
+    should_be = ((df["location"] == "Norway") | (df["location"] == "Germany")) & (
+        df["date"] > datetime.strptime("2021-11-20", "%Y-%m-%d")
     )
 
     processed_query = split_query(query)

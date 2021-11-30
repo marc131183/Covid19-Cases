@@ -4,6 +4,7 @@ from dash import html
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from plotly.validators.scatter.marker import SymbolValidator
 import pandas as pd
 from dash.dependencies import Input, Output
 import json
@@ -54,7 +55,10 @@ app.layout = html.Div(
         dcc.Input(
             id="filter-query-input",
             placeholder="Enter filter query",
-            style={"width": "15%", "height": "30px",},
+            style={
+                "width": "15%",
+                "height": "30px",
+            },
         ),
         html.Div(
             [
@@ -69,7 +73,11 @@ app.layout = html.Div(
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={"width": "30%", "float": "right", "display": "inline-block",},
+            style={
+                "width": "30%",
+                "float": "right",
+                "display": "inline-block",
+            },
         ),
         html.Div(
             [
@@ -77,10 +85,7 @@ app.layout = html.Div(
                 dcc.Dropdown(
                     id="grouping",
                     placeholder="Choose how to color",
-                    options=[
-                        {"label": elem[0].upper() + elem[1:], "value": elem}
-                        for elem in df.columns
-                    ],
+                    options=[{"label": elem, "value": elem} for elem in df.columns],
                 ),
             ],
             style={
@@ -160,8 +165,10 @@ def update_graph(
         df_ = df.copy()
     else:
         derived_query_structure = filter_dash.split_query(query)
-        df_ = df.groupby("Location").apply(
-            lambda x: x[filter_dash.resolve_query(x, derived_query_structure)]
+        df_ = (
+            df.copy()
+            .groupby("Location")
+            .apply(lambda x: x[filter_dash.resolve_query(x, derived_query_structure)])
         )
 
     if len(yaxis_column_name) > 1:
@@ -170,105 +177,86 @@ def update_graph(
         cols_yprimary = str(yaxis_column_name[0])
         cols_ysecondary = str(yaxis_column_name[1])
 
-        options = {"Scatter": go.Scatter, "Bar": go.Bar, "Line": go.Line}
-        if plot_type in options.keys():
-            plot_selected = options[plot_type]
-            xaxis_data = df_[xaxis_column_name]
-            magnitude_primary, magnitude_secondary = (
-                df_[yaxis_column_name[0]].mean(),
-                df_[yaxis_column_name[1]].mean(),
-            )
-            # Add traces
-            # markers https://plotly.com/python/marker-style/
-            for i, yaxis in enumerate(yaxis_column_name):
-                if i == 0 or i == 1:
-                    if plot_type == "Scatter":
-                        fig.add_trace(
-                            plot_selected(
-                                x=xaxis_data,
-                                y=df_[yaxis],
-                                name=str(yaxis),
-                                mode="markers",
-                            ),
-                            secondary_y=i == 1,
-                        )
-                    elif plot_type == "Bar":
-                        fig.add_trace(
-                            plot_selected(
-                                x=xaxis_data,
-                                y=df_[yaxis],
-                                name=str(yaxis),
-                                offsetgroup=i,
-                            ),
-                            secondary_y=i == 1,
-                        )
-                    else:
-                        fig.add_trace(
-                            plot_selected(x=xaxis_data, y=df_[yaxis], name=str(yaxis),),
-                            secondary_y=i == 1,
-                        )
-                else:
-                    # add axis to the one that's magnitude is closer
-                    cur_data = df_[yaxis]
-                    magnitude = cur_data.mean()
-                    add_to_secondary = True
-                    if np.linalg.norm(magnitude - magnitude_primary) < np.linalg.norm(
-                        magnitude - magnitude_secondary
-                    ):
-                        add_to_secondary = False
-                    if plot_type == "Scatter":
-                        fig.add_trace(
-                            plot_selected(
-                                x=xaxis_data,
-                                y=cur_data,
-                                name=str(yaxis),
-                                mode="markers",
-                            ),
-                            secondary_y=add_to_secondary,
-                        )
-                    elif plot_type == "Bar":
-                        fig.add_trace(
-                            plot_selected(
-                                x=xaxis_data,
-                                y=cur_data,
-                                name=str(yaxis),
-                                offsetgroup=i,
-                            ),
-                            secondary_y=i == 1,
-                        )
-                    else:
-                        fig.add_trace(
-                            plot_selected(x=xaxis_data, y=cur_data, name=str(yaxis),),
-                            secondary_y=add_to_secondary,
-                        )
-                    if add_to_secondary:
-                        cols_ysecondary += " / {}".format(yaxis)
-                    else:
-                        cols_yprimary += " / {}".format(yaxis)
-
-            # Set x-axis title
-            if xaxis_type == "Log":
-                fig.update_xaxes(
-                    title_text=str(xaxis_column_name), type="log", row=1, col=1
-                )
+        xaxis_data = df_[xaxis_column_name]
+        magnitude_primary, magnitude_secondary = (
+            df_[yaxis_column_name[0]].mean(),
+            df_[yaxis_column_name[1]].mean(),
+        )
+        symbols = SymbolValidator().values
+        # markers https://plotly.com/python/marker-style/
+        for i, yaxis in enumerate(yaxis_column_name):
+            cur_data = df_[yaxis]
+            if i == 0 or i == 1:
+                add_to_secondary = i == 1
             else:
-                fig.update_xaxes(title_text=str(xaxis_column_name))
+                # add axis to the one that's magnitude is closer
+                magnitude = cur_data.mean()
+                add_to_secondary = True
+                if np.linalg.norm(magnitude - magnitude_primary) < np.linalg.norm(
+                    magnitude - magnitude_secondary
+                ):
+                    add_to_secondary = False
+                if add_to_secondary:
+                    cols_ysecondary += " / {}".format(yaxis)
+                else:
+                    cols_yprimary += " / {}".format(yaxis)
 
-            # Set y-axes titles
-            fig.update_yaxes(
-                title_text=cols_yprimary,
-                secondary_y=False,
-                type="log" if yaxis_type == "Log" else "linear",
-                col=1,
-                row=1,
+            # Add traces
+            if plot_type == "Scatter":
+                fig.add_trace(
+                    go.Scatter(
+                        x=xaxis_data,
+                        y=cur_data,
+                        name=str(yaxis),
+                        mode="markers",
+                        marker_symbol=symbols[i],
+                    ),
+                    secondary_y=add_to_secondary,
+                )
+                # marker_color=(df_[grouping] if grouping != None else None),
+            elif plot_type == "Bar":
+                fig.add_trace(
+                    go.Bar(
+                        x=xaxis_data,
+                        y=cur_data,
+                        name=str(yaxis),
+                        offsetgroup=i,
+                    ),
+                    secondary_y=add_to_secondary,
+                )
+            elif plot_type == "Line":
+                fig.add_trace(
+                    go.Line(
+                        x=xaxis_data,
+                        y=df_[yaxis],
+                        name=str(yaxis),
+                    ),
+                    secondary_y=add_to_secondary,
+                )
+
+        # Set x-axis title
+        if xaxis_type == "Log":
+            fig.update_xaxes(
+                title_text=str(xaxis_column_name), type="log", row=1, col=1
             )
-            fig.update_yaxes(
-                title_text=cols_ysecondary,
-                secondary_y=True,
-                type="log" if yaxis_type == "Log" else "linear",
-                col=1,
-                row=1,
-            )
+        else:
+            fig.update_xaxes(title_text=str(xaxis_column_name))
+
+        # Set y-axes titles
+        fig.update_yaxes(
+            title_text=cols_yprimary,
+            secondary_y=False,
+            type="log" if yaxis_type == "Log" else "linear",
+            col=1,
+            row=1,
+        )
+        fig.update_yaxes(
+            title_text=cols_ysecondary,
+            secondary_y=True,
+            type="log" if yaxis_type == "Log" else "linear",
+            col=1,
+            row=1,
+        )
     else:
         if plot_type == "Scatter":  # remember: only make some parameters available?
             fig = px.scatter(
