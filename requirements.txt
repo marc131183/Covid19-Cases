@@ -30,3 +30,4 @@ not done - think about design of page
 not done - fix coloring for multiple y-parameters?
 
 not done - after all of this, think about more plot types to add
+not done - maybe add second plot to compare countries? 
