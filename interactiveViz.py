@@ -160,8 +160,43 @@ app.layout = html.Div(
             },
         ),
         dcc.Graph(id="indicator-graphic"),
+        html.Div(
+            [
+                dcc.Markdown(
+                    """
+                **Hover Data**
+
+                Mouse over values in the graph.
+            """
+                ),
+                html.Pre(
+                    id="hover-data",
+                    style={"border": "thin lightgrey solid", "overflowX": "scroll"},
+                ),
+            ],
+            className="three columns",
+        ),
     ],
 )
+
+
+@app.callback(
+    Output("hover-data", "children"),
+    Input("indicator-graphic", "hoverData"),
+    Input("xaxis-column", "value"),
+    Input("yaxis-column", "value"),
+)
+def display_hover_data(hoverData, xaxis_column, yaxis_column):
+    if hoverData is None:
+        return json.dumps(hoverData, indent=2)
+    else:
+        return json.dumps(
+            {
+                xaxis_column: hoverData["points"][0]["x"],
+                "y": hoverData["points"][0]["y"],
+            },
+            indent=2,
+        )
 
 
 @app.callback(
