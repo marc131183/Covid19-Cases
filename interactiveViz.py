@@ -55,10 +55,7 @@ app.layout = html.Div(
         dcc.Input(
             id="filter-query-input",
             placeholder="Enter filter query",
-            style={
-                "width": "30%",
-                "height": "30px",
-            },
+            style={"width": "30%", "height": "30px",},
         ),
         html.Div(
             [
@@ -73,11 +70,7 @@ app.layout = html.Div(
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={
-                "width": "30%",
-                "float": "right",
-                "display": "inline-block",
-            },
+            style={"width": "30%", "float": "right", "display": "inline-block",},
         ),
         html.Div(
             [
@@ -132,8 +125,43 @@ app.layout = html.Div(
             style={"width": "48%", "float": "right", "display": "inline-block"},
         ),
         dcc.Graph(id="indicator-graphic"),
+        html.Div(
+            [
+                dcc.Markdown(
+                    """
+                **Hover Data**
+
+                Mouse over values in the graph.
+            """
+                ),
+                html.Pre(
+                    id="hover-data",
+                    style={"border": "thin lightgrey solid", "overflowX": "scroll"},
+                ),
+            ],
+            className="three columns",
+        ),
     ],
 )
+
+
+@app.callback(
+    Output("hover-data", "children"),
+    Input("indicator-graphic", "hoverData"),
+    Input("xaxis-column", "value"),
+    Input("yaxis-column", "value"),
+)
+def display_hover_data(hoverData, xaxis_column, yaxis_column):
+    if hoverData is None:
+        return json.dumps(hoverData, indent=2)
+    else:
+        return json.dumps(
+            {
+                xaxis_column: hoverData["points"][0]["x"],
+                "y": hoverData["points"][0]["y"],
+            },
+            indent=2,
+        )
 
 
 @app.callback(
@@ -216,21 +244,12 @@ def update_graph(
                 # marker_color=(df_[grouping] if grouping != None else None),
             elif plot_type == "Bar":
                 fig.add_trace(
-                    go.Bar(
-                        x=xaxis_data,
-                        y=cur_data,
-                        name=str(yaxis),
-                        offsetgroup=i,
-                    ),
+                    go.Bar(x=xaxis_data, y=cur_data, name=str(yaxis), offsetgroup=i,),
                     secondary_y=add_to_secondary,
                 )
             elif plot_type == "Line":
                 fig.add_trace(
-                    go.Line(
-                        x=xaxis_data,
-                        y=df_[yaxis],
-                        name=str(yaxis),
-                    ),
+                    go.Line(x=xaxis_data, y=df_[yaxis], name=str(yaxis),),
                     secondary_y=add_to_secondary,
                 )
 
