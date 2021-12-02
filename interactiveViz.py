@@ -72,11 +72,7 @@ app.layout = html.Div(
         dcc.Input(
             id="filter-query-input",
             placeholder="Enter filter query",
-            style={
-                "width": "30%",
-                "height": "30px",
-                "color": colors["text"],
-            },
+            style={"width": "30%", "height": "30px", "color": colors["text"],},
         ),
         html.Div(
             [
@@ -91,11 +87,7 @@ app.layout = html.Div(
                     labelStyle={"display": "inline-block", "color": colors["text"]},
                 ),
             ],
-            style={
-                "width": "30%",
-                "float": "right",
-                "display": "inline-block",
-            },
+            style={"width": "30%", "float": "right", "display": "inline-block",},
         ),
         html.Div(
             [
@@ -182,7 +174,11 @@ app.layout = html.Div(
                         ),
                     ],
                     className="three columns",
-                    style={"width": "20%", "display": "inline-block"},
+                    style={
+                        "width": "20%",
+                        "display": "inline-block",
+                        "color": colors["text"],
+                    },
                 ),
                 html.Div(
                     [
@@ -202,7 +198,11 @@ app.layout = html.Div(
                         ),
                     ],
                     className="three columns",
-                    style={"width": "20%", "display": "inline-block"},
+                    style={
+                        "width": "20%",
+                        "display": "inline-block",
+                        "color": colors["text"],
+                    },
                 ),
             ],
         ),
@@ -328,21 +328,12 @@ def update_graph(
                 # marker_color=(df_[grouping] if grouping != None else None),
             elif plot_type == "Bar":
                 fig.add_trace(
-                    go.Bar(
-                        x=xaxis_data,
-                        y=cur_data,
-                        name=str(yaxis),
-                        offsetgroup=i,
-                    ),
+                    go.Bar(x=xaxis_data, y=cur_data, name=str(yaxis), offsetgroup=i,),
                     secondary_y=add_to_secondary,
                 )
             elif plot_type == "Line":
                 fig.add_trace(
-                    go.Line(
-                        x=xaxis_data,
-                        y=df_[yaxis],
-                        name=str(yaxis),
-                    ),
+                    go.Line(x=xaxis_data, y=df_[yaxis], name=str(yaxis),),
                     secondary_y=add_to_secondary,
                 )
 
