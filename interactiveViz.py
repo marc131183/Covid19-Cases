@@ -16,7 +16,7 @@ from predict import Model
 
 app = dash.Dash(__name__)
 
-colors = {"background": "#282b38", "text": "#979A9C"}  # 282b38, a5b1cd
+colors = {"bg": "#282b38", "bg_bright": "#3b3f53", "text": "#979A9C"}
 
 df = getData()
 
@@ -32,134 +32,233 @@ df = df.sort_index(axis=1)
 # model = Model(df)
 # df_predict = model.predict("Norway")
 
-fig = px.bar(df, x="Location", y="New_cases", color="Continent", barmode="group")
-
-fig.update_layout(
-    plot_bgcolor=colors["background"],
-    paper_bgcolor=colors["background"],
-    font_color=colors["text"],
-    clickmode="event+select",
-)
-
 app.layout = html.Div(
-    style={"backgroundColor": colors["background"]},
+    style={"backgroundColor": colors["bg"]},
     children=[
         html.Div(
-            className="banner",
+            children="Covid-19 Data Explorer",
+            style={
+                "color": colors["text"],
+                "fontSize": 60,
+                "textAlign": "center",
+                "padding": "20px",
+                "backgroundColor": colors["bg_bright"],
+                "border-radius": 10,
+            },
+        ),
+        html.Div(className="row", style={"height": "10px"}),
+        html.Div(
+            className="row",
             children=[
-                # Change App Name here
                 html.Div(
-                    className="container scalable",
+                    "Plot Type:",
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "20%",
+                        "float": "left",
+                    },
+                ),
+                html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
+                html.Div(
+                    "Filter Query:",
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "55.3%",
+                        "float": "left",
+                    },
+                ),
+                html.Div(
+                    "Color by:",
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "20%",
+                        "float": "right",
+                    },
+                ),
+            ],
+            style={"height": "20px"},
+        ),
+        html.Div(className="row", style={"height": "10px"}),
+        html.Div(
+            className="row",
+            children=[
+                html.Div(
                     children=[
-                        # Change App Name here
-                        html.H2(
-                            html.A(
-                                "Covid-19 Data Explorer",
-                                href="https://github.com/marc131183/Covid19-Cases",
-                                style={
-                                    "text-decoration": "none",
-                                    "color": colors["text"],
-                                    "fontSize": 50,
-                                },
-                            )
+                        dcc.Dropdown(
+                            id="plot_type",
+                            value="Scatter",
+                            options=[
+                                {"label": elem, "value": elem}
+                                for elem in ["Scatter", "Bar", "Line", "Predict"]
+                            ],
+                            style={
+                                "color": colors["text"],
+                                "backgroundColor": colors["bg_bright"],
+                                "fontSize": 25,
+                                "border-color": "#ffffff",
+                                "border-radius": 5,
+                            },
                         ),
                     ],
-                    style={"textAlign": "center"},
+                    style={
+                        "width": "20%",
+                        "float": "left",
+                    },
                 ),
-            ],
-        ),
-        "Filter query:",
-        dcc.Input(
-            id="filter-query-input",
-            placeholder="Enter filter query",
-            style={
-                "width": "30%",
-                "height": "30px",
-                "color": colors["text"],
-            },
-        ),
-        html.Div(
-            [
-                "Select plot type:",
-                dcc.RadioItems(
-                    id="plot_type",
-                    options=[
-                        {"label": i, "value": i}
-                        for i in ["Scatter", "Bar", "Line", "Predict"]
+                html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
+                dcc.Input(
+                    id="filter-query-input",
+                    placeholder="Enter filter query!",
+                    style={
+                        "width": "55.3%",
+                        "color": colors["text"],
+                        "fontSize": 25,
+                        "backgroundColor": colors["bg_bright"],
+                        "border-color": "#ffffff",
+                        "border-radius": 5,
+                        "float": "left",
+                    },
+                ),
+                html.Div(
+                    children=[
+                        dcc.Dropdown(
+                            id="grouping",
+                            placeholder="Choose how to color",
+                            options=[
+                                {"label": elem, "value": elem} for elem in df.columns
+                            ],
+                            style={
+                                "color": colors["text"],
+                                "backgroundColor": colors["bg_bright"],
+                                "fontSize": 25,
+                                "border-color": "#ffffff",
+                                "border-radius": 5,
+                            },
+                        )
                     ],
-                    value="Scatter",
-                    labelStyle={"display": "inline-block", "color": colors["text"]},
+                    style={
+                        "width": "20%",
+                        "float": "right",
+                    },
                 ),
             ],
-            style={
-                "width": "30%",
-                "float": "right",
-                "display": "inline-block",
-            },
+            style={"height": "30px"},
         ),
+        html.Div(className="row", style={"height": "20px"}),
         html.Div(
-            [
-                "Color by:",
-                dcc.Dropdown(
-                    id="grouping",
-                    placeholder="Choose how to color",
-                    options=[{"label": elem, "value": elem} for elem in df.columns],
-                ),
-            ],
-            style={
-                "width": "30%",
-                "float": "right",
-                "display": "inline-block",
-                "marginRight": "10px",
-                "color": colors["text"],
-            },
-        ),
-        html.Div(
-            [
-                "Y-parameter:",
-                dcc.Dropdown(
-                    id="yaxis-column",
-                    placeholder="Choose a y-parameter",
-                    options=[{"label": elem, "value": elem} for elem in df.columns],
-                    multi=True,
+            className="row",
+            children=[
+                html.Div(
+                    "Y-Axis:",
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "29.5%",
+                        "float": "left",
+                    },
                 ),
                 dcc.RadioItems(
                     id="yaxis-type",
-                    options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": label, "value": value}
+                        for label, value in zip(
+                            ["Linear Scale", "Logarithmic Scale"], ["Linear", "Log"]
+                        )
+                    ],
                     value="Linear",
-                    labelStyle={"display": "inline-block"},
+                    labelStyle={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "10%",
+                        "float": "left",
+                    },
                 ),
-            ],
-            style={
-                "width": "48%",
-                "float": "down",
-                "display": "inline-block",
-                "color": colors["text"],
-            },
-        ),
-        html.Div(
-            [
-                "X-parameter:",
-                dcc.Dropdown(
-                    id="xaxis-column",
-                    placeholder="Choose a x-parameter",
-                    options=[{"label": elem, "value": elem} for elem in df.columns],
-                    # multi=True,
+                html.Div(style={"width": "1.5%", "height": "1px", "float": "left"}),
+                html.Div(
+                    "X-Axis:",
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "10%",
+                        "float": "left",
+                    },
                 ),
                 dcc.RadioItems(
                     id="xaxis-type",
-                    options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
+                    options=[
+                        {"label": label, "value": value}
+                        for label, value in zip(
+                            ["Logarithmic Scale", "Linear Scale"], ["Log", "Linear"]
+                        )
+                    ],
                     value="Linear",
-                    labelStyle={"display": "inline-block"},
+                    labelStyle={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "9.5%",
+                        "float": "right",
+                    },
                 ),
             ],
-            style={
-                "width": "48%",
-                "float": "right",
-                "display": "inline-block",
-                "color": colors["text"],
-            },
+            style={"height": "20px"},
         ),
+        html.Div(className="row", style={"height": "10px"}),
+        html.Div(
+            className="row",
+            children=[
+                html.Div(
+                    children=[
+                        dcc.Dropdown(
+                            id="yaxis-column",
+                            placeholder="Choose which column to visualize for y-axis",
+                            options=[
+                                {"label": elem, "value": elem} for elem in df.columns
+                            ],
+                            style={
+                                "color": colors["text"],
+                                "backgroundColor": colors["bg_bright"],
+                                "fontSize": 25,
+                                "border-color": "#ffffff",
+                                "border-radius": 5,
+                            },
+                            multi=True,
+                        ),
+                    ],
+                    style={
+                        "width": "49%",
+                        "float": "left",
+                    },
+                ),
+                html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
+                html.Div(
+                    children=[
+                        dcc.Dropdown(
+                            id="xaxis-column",
+                            placeholder="Choose which column to visualize for x-axis",
+                            options=[
+                                {"label": elem, "value": elem} for elem in df.columns
+                            ],
+                            style={
+                                "color": colors["text"],
+                                "backgroundColor": colors["bg_bright"],
+                                "fontSize": 25,
+                                "border-color": "#ffffff",
+                                "border-radius": 5,
+                            },
+                        ),
+                    ],
+                    style={
+                        "width": "49%",
+                        "float": "right",
+                    },
+                ),
+            ],
+            style={"height": "30px"},
+        ),
+        html.Div(className="row", style={"height": "25px"}),
         dcc.Graph(id="indicator-graphic"),
         html.Div(
             className="row",
@@ -169,7 +268,6 @@ app.layout = html.Div(
                         dcc.Markdown(
                             """
                     **Hover Data**
-
                     Mouse over values in the graph.
                 """
                         ),
@@ -182,14 +280,17 @@ app.layout = html.Div(
                         ),
                     ],
                     className="three columns",
-                    style={"width": "20%", "display": "inline-block"},
+                    style={
+                        "width": "20%",
+                        "display": "inline-block",
+                        "color": colors["text"],
+                    },
                 ),
                 html.Div(
                     [
                         dcc.Markdown(
                             """
                     **Click Data**
-
                     Click on points in the graph.
                 """
                         ),
@@ -202,7 +303,11 @@ app.layout = html.Div(
                         ),
                     ],
                     className="three columns",
-                    style={"width": "20%", "display": "inline-block"},
+                    style={
+                        "width": "20%",
+                        "display": "inline-block",
+                        "color": colors["text"],
+                    },
                 ),
             ],
         ),
@@ -409,7 +514,13 @@ def update_graph(
         #         log_y=yaxis_type == "Log",
         #     )
 
-    fig.update_layout(margin={"l": 40, "b": 40, "t": 20, "r": 0})
+    fig.update_layout(
+        plot_bgcolor=colors["bg"],
+        paper_bgcolor=colors["bg"],
+        font_color=colors["text"],
+        clickmode="event+select",
+        margin={"l": 40, "b": 40, "t": 20, "r": 0},
+    )
 
     return fig
 
