@@ -16,7 +16,7 @@ from predict import Model
 
 app = dash.Dash(__name__)
 
-colors = {"background": "#ede6d8", "text": "#1405eb"}
+colors = {"background": "#282b38", "text": "#979A9C"}  # 282b38, a5b1cd
 
 df = getData()
 
@@ -29,8 +29,8 @@ df = df.sort_index(axis=1)
 #    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
 # )
 
-model = Model(df)
-df_predict = model.predict("Norway")
+# model = Model(df)
+# df_predict = model.predict("Norway")
 
 fig = px.bar(df, x="Location", y="New_cases", color="Continent", barmode="group")
 
@@ -43,13 +43,29 @@ fig.update_layout(
 app.layout = html.Div(
     style={"backgroundColor": colors["background"]},
     children=[
-        html.H1(
-            children="Overview of Covid-19",
-            style={"textAlign": "center", "color": colors["text"]},
-        ),
         html.Div(
-            children="Historical data of Covid-19 cases.",
-            style={"textAlign": "center", "color": colors["text"]},
+            className="banner",
+            children=[
+                # Change App Name here
+                html.Div(
+                    className="container scalable",
+                    children=[
+                        # Change App Name here
+                        html.H2(
+                            html.A(
+                                "Covid-19 Data Explorer",
+                                href="https://github.com/marc131183/Covid19-Cases",
+                                style={
+                                    "text-decoration": "none",
+                                    "color": colors["text"],
+                                    "fontSize": 50,
+                                },
+                            )
+                        ),
+                    ],
+                    style={"textAlign": "center"},
+                ),
+            ],
         ),
         "Filter query:",
         dcc.Input(
@@ -58,6 +74,7 @@ app.layout = html.Div(
             style={
                 "width": "30%",
                 "height": "30px",
+                "color": colors["text"],
             },
         ),
         html.Div(
@@ -70,7 +87,7 @@ app.layout = html.Div(
                         for i in ["Scatter", "Bar", "Line", "Predict"]
                     ],
                     value="Scatter",
-                    labelStyle={"display": "inline-block"},
+                    labelStyle={"display": "inline-block", "color": colors["text"]},
                 ),
             ],
             style={
@@ -93,6 +110,7 @@ app.layout = html.Div(
                 "float": "right",
                 "display": "inline-block",
                 "marginRight": "10px",
+                "color": colors["text"],
             },
         ),
         html.Div(
@@ -111,7 +129,12 @@ app.layout = html.Div(
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={"width": "48%", "float": "down", "display": "inline-block"},
+            style={
+                "width": "48%",
+                "float": "down",
+                "display": "inline-block",
+                "color": colors["text"],
+            },
         ),
         html.Div(
             [
@@ -129,7 +152,12 @@ app.layout = html.Div(
                     labelStyle={"display": "inline-block"},
                 ),
             ],
-            style={"width": "48%", "float": "right", "display": "inline-block"},
+            style={
+                "width": "48%",
+                "float": "right",
+                "display": "inline-block",
+                "color": colors["text"],
+            },
         ),
         dcc.Graph(id="indicator-graphic"),
     ],
@@ -288,14 +316,14 @@ def update_graph(
                 color=(df_[grouping] if grouping != None else None),
             )
 
-        elif plot_type == "Predict":
-            fig = px.line(  # remember: fix prediction
-                df_predict,
-                x=df_predict["date"],
-                y=df_predict["new_cases"],
-                log_x=xaxis_type == "Log",
-                log_y=yaxis_type == "Log",
-            )
+        # elif plot_type == "Predict":
+        #     fig = px.line(  # remember: fix prediction
+        #         df_predict,
+        #         x=df_predict["date"],
+        #         y=df_predict["new_cases"],
+        #         log_x=xaxis_type == "Log",
+        #         log_y=yaxis_type == "Log",
+        #     )
 
     fig.update_layout(margin={"l": 40, "b": 40, "t": 20, "r": 0})
 
