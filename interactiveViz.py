@@ -38,6 +38,7 @@ fig.update_layout(
     plot_bgcolor=colors["background"],
     paper_bgcolor=colors["background"],
     font_color=colors["text"],
+    clickmode="event+select",
 )
 
 app.layout = html.Div(
@@ -126,20 +127,49 @@ app.layout = html.Div(
         ),
         dcc.Graph(id="indicator-graphic"),
         html.Div(
-            [
-                dcc.Markdown(
-                    """
-                **Hover Data**
+            className="row",
+            children=[
+                html.Div(
+                    [
+                        dcc.Markdown(
+                            """
+                    **Hover Data**
 
-                Mouse over values in the graph.
-            """
+                    Mouse over values in the graph.
+                """
+                        ),
+                        html.Pre(
+                            id="hover-data",
+                            style={
+                                "border": "thin lightgrey solid",
+                                "overflowX": "scroll",
+                            },
+                        ),
+                    ],
+                    className="three columns",
+                    style={"width": "20%", "display": "inline-block"},
                 ),
-                html.Pre(
-                    id="hover-data",
-                    style={"border": "thin lightgrey solid", "overflowX": "scroll"},
+                html.Div(
+                    [
+                        dcc.Markdown(
+                            """
+                    **Click Data**
+
+                    Click on points in the graph.
+                """
+                        ),
+                        html.Pre(
+                            id="click-data",
+                            style={
+                                "border": "thin lightgrey solid",
+                                "overflowX": "scroll",
+                            },
+                        ),
+                    ],
+                    className="three columns",
+                    style={"width": "20%", "display": "inline-block"},
                 ),
             ],
-            className="three columns",
         ),
     ],
 )
@@ -159,6 +189,25 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column):
             {
                 xaxis_column: hoverData["points"][0]["x"],
                 "y": hoverData["points"][0]["y"],
+            },
+            indent=2,
+        )
+
+
+@app.callback(
+    Output("click-data", "children"),
+    Input("indicator-graphic", "clickData"),
+    Input("xaxis-column", "value"),
+    Input("yaxis-column", "value"),
+)
+def display_click_data(clickData, xaxis_column, yaxis_column):
+    if clickData is None:
+        return json.dumps(clickData, indent=2)
+    else:
+        return json.dumps(
+            {
+                xaxis_column: clickData["points"][0]["x"],
+                "y": clickData["points"][0]["y"],
             },
             indent=2,
         )
