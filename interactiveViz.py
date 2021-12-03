@@ -103,10 +103,7 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={
-                        "width": "20%",
-                        "float": "left",
-                    },
+                    style={"width": "20%", "float": "left",},
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 dcc.Input(
@@ -139,10 +136,7 @@ app.layout = html.Div(
                             },
                         )
                     ],
-                    style={
-                        "width": "20%",
-                        "float": "right",
-                    },
+                    style={"width": "20%", "float": "right",},
                 ),
             ],
             style={"height": "30px"},
@@ -156,7 +150,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "29.5%",
+                        "width": "26.3%",
                         "float": "left",
                     },
                 ),
@@ -172,7 +166,7 @@ app.layout = html.Div(
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "10%",
+                        "width": "11.5%",
                         "float": "left",
                     },
                 ),
@@ -198,7 +192,7 @@ app.layout = html.Div(
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "9.5%",
+                        "width": "11.5%",
                         "float": "right",
                     },
                 ),
@@ -227,10 +221,7 @@ app.layout = html.Div(
                             multi=True,
                         ),
                     ],
-                    style={
-                        "width": "49%",
-                        "float": "left",
-                    },
+                    style={"width": "49%", "float": "left",},
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -250,10 +241,7 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={
-                        "width": "49%",
-                        "float": "right",
-                    },
+                    style={"width": "49%", "float": "right",},
                 ),
             ],
             style={"height": "30px"},
@@ -281,7 +269,7 @@ app.layout = html.Div(
                     ],
                     className="three columns",
                     style={
-                        "width": "20%",
+                        "width": "24%",
                         "display": "inline-block",
                         "color": colors["text"],
                     },
@@ -304,7 +292,7 @@ app.layout = html.Div(
                     ],
                     className="three columns",
                     style={
-                        "width": "20%",
+                        "width": "24%",
                         "display": "inline-block",
                         "color": colors["text"],
                     },
@@ -433,21 +421,12 @@ def update_graph(
                 # marker_color=(df_[grouping] if grouping != None else None),
             elif plot_type == "Bar":
                 fig.add_trace(
-                    go.Bar(
-                        x=xaxis_data,
-                        y=cur_data,
-                        name=str(yaxis),
-                        offsetgroup=i,
-                    ),
+                    go.Bar(x=xaxis_data, y=cur_data, name=str(yaxis), offsetgroup=i,),
                     secondary_y=add_to_secondary,
                 )
             elif plot_type == "Line":
                 fig.add_trace(
-                    go.Line(
-                        x=xaxis_data,
-                        y=df_[yaxis],
-                        name=str(yaxis),
-                    ),
+                    go.Line(x=xaxis_data, y=df_[yaxis], name=str(yaxis),),
                     secondary_y=add_to_secondary,
                 )
 
