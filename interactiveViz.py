@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output
 import json
 import numpy as np
 import filter_dash
+from dash.exceptions import PreventUpdate
 
 from data_processing import getData
 from predict import Model
@@ -297,11 +298,35 @@ app.layout = html.Div(
                         "color": colors["text"],
                     },
                 ),
+                html.Div([
+                    html.Button('Click here to see filter query examples', id='show-secret'),
+                    html.Div(id='body-div'),
+                ],
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 15,
+                        "width": "50%",
+                        "display": "inline-block",
+                        "float": "right",}
+                )
             ],
         ),
     ],
 )
 
+@app.callback(
+    Output(component_id='body-div', component_property='children'),
+    Input(component_id='show-secret', component_property='n_clicks')
+)
+def update_output(n_clicks):
+    if n_clicks is None or (n_clicks % 2 == 0):
+        return {}
+    else:
+        return ["{Continent} = \"Asia\": Get all countries that are in Asia:", html.Br(), 
+                "{Continent} = \"Europe\" or {Population} >= 10000000: Get all countries that are either in Europe or have a population of 10000000 or bigger", html.Br(),
+                "({Continent} = \"North America\" or {Continent} = \"South America\") and {Human_development_index} < 30: Get all countries that are either in North- or South America and have a human development index of smaller than 30", html.Br(),
+                "mean{New_cases} >= 300 and max{New_deaths} < 100: Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths should be below 100", html.Br(),
+                "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}: Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)",]
 
 @app.callback(
     Output("hover-data", "children"),

@@ -29,7 +29,7 @@ not done - add information box on the bottom, giving info about: column descript
 not done - think about design of page
 not done - fix coloring for multiple y-parameters?
 not done - add columns divided by population
-not done - link filter query examples in visualization tool
+done - link filter query examples in visualization tool
 not done - fix color for selection boxes (when item is selected) and size of multi selection box
 
 not done - after all of this, think about more plot types to add
