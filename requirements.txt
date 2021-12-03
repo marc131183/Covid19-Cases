@@ -22,15 +22,15 @@ done - sort parameters for axis selection
 done - add location attribute to grouped df, actually not necessary
 not done - disable linear/log selection if column type is non-numerical
 done - add filtering by daterange
-not done - prediction graph
+not done - prediction graph, and add option for choosing which attributes to impact the prediction
 done - align selection boxes
 not done - increase font size of title, update secondary title
-not done - add information box on the bottom, giving info about: column descriptions, (query examples), if user hovers over datapoint give information about it (e.g. max(new_cases), mean, date, country in general, choose color for one specific country, change color for all other countries)
+not done - add information box on the bottom, giving info about: column descriptions, if user hovers over datapoint give information about it (e.g. max(new_cases), mean, date, country in general, choose color for one specific country, change color for all other countries, information about the choosen columns)
 not done - think about design of page
 not done - fix coloring for multiple y-parameters?
 not done - add columns divided by population
 done - link filter query examples in visualization tool
 not done - fix color for selection boxes (when item is selected) and size of multi selection box
 
-not done - after all of this, think about more plot types to add
+not done - after all of this, think about more plot types to add (earth map)
 not done - maybe add second plot to compare countries? 
