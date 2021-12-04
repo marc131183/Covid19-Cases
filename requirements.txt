@@ -20,7 +20,7 @@ done - if second attribute selected, show new axis on the left, if more are sele
 done - ask di, if current filtering system is okay, if yes then increase box size for query
 done - sort parameters for axis selection
 done - add location attribute to grouped df, actually not necessary
-not done - disable linear/log selection if column type is non-numerical
+done - disable linear/log selection if column type is non-numerical
 done - add filtering by daterange
 not done - prediction graph, and add option for choosing which attributes to impact the prediction
 done - align selection boxes

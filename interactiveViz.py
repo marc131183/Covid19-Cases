@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from plotly.validators.scatter.marker import SymbolValidator
 import pandas as pd
+from pandas.api.types import is_numeric_dtype
 from dash.dependencies import Input, Output
 import json
 import numpy as np
@@ -104,7 +105,10 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={"width": "20%", "float": "left",},
+                    style={
+                        "width": "20%",
+                        "float": "left",
+                    },
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 dcc.Input(
@@ -137,7 +141,10 @@ app.layout = html.Div(
                             },
                         )
                     ],
-                    style={"width": "20%", "float": "right",},
+                    style={
+                        "width": "20%",
+                        "float": "right",
+                    },
                 ),
             ],
             style={"height": "30px"},
@@ -222,7 +229,10 @@ app.layout = html.Div(
                             multi=True,
                         ),
                     ],
-                    style={"width": "49%", "float": "left",},
+                    style={
+                        "width": "49%",
+                        "float": "left",
+                    },
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -242,7 +252,10 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={"width": "49%", "float": "right",},
+                    style={
+                        "width": "49%",
+                        "float": "right",
+                    },
                 ),
             ],
             style={"height": "30px"},
@@ -298,35 +311,47 @@ app.layout = html.Div(
                         "color": colors["text"],
                     },
                 ),
-                html.Div([
-                    html.Button('Click here to see filter query examples', id='show-secret'),
-                    html.Div(id='body-div'),
-                ],
+                html.Div(
+                    [
+                        html.Button(
+                            "Click here to see filter query examples", id="show-secret"
+                        ),
+                        html.Div(id="body-div"),
+                    ],
                     style={
                         "color": colors["text"],
                         "fontSize": 15,
                         "width": "50%",
                         "display": "inline-block",
-                        "float": "right",}
-                )
+                        "float": "right",
+                    },
+                ),
             ],
         ),
     ],
 )
 
+
 @app.callback(
-    Output(component_id='body-div', component_property='children'),
-    Input(component_id='show-secret', component_property='n_clicks')
+    Output(component_id="body-div", component_property="children"),
+    Input(component_id="show-secret", component_property="n_clicks"),
 )
 def update_output(n_clicks):
     if n_clicks is None or (n_clicks % 2 == 0):
         return {}
     else:
-        return ["{Continent} = \"Asia\": Get all countries that are in Asia:", html.Br(), 
-                "{Continent} = \"Europe\" or {Population} >= 10000000: Get all countries that are either in Europe or have a population of 10000000 or bigger", html.Br(),
-                "({Continent} = \"North America\" or {Continent} = \"South America\") and {Human_development_index} < 30: Get all countries that are either in North- or South America and have a human development index of smaller than 30", html.Br(),
-                "mean{New_cases} >= 300 and max{New_deaths} < 100: Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths should be below 100", html.Br(),
-                "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}: Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)",]
+        return [
+            '{Continent} = "Asia": Get all countries that are in Asia:',
+            html.Br(),
+            '{Continent} = "Europe" or {Population} >= 10000000: Get all countries that are either in Europe or have a population of 10000000 or bigger',
+            html.Br(),
+            '({Continent} = "North America" or {Continent} = "South America") and {Human_development_index} < 30: Get all countries that are either in North- or South America and have a human development index of smaller than 30',
+            html.Br(),
+            "mean{New_cases} >= 300 and max{New_deaths} < 100: Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths should be below 100",
+            html.Br(),
+            "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}: Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)",
+        ]
+
 
 @app.callback(
     Output("hover-data", "children"),
@@ -367,14 +392,22 @@ def display_click_data(clickData, xaxis_column, yaxis_column):
 
 
 @app.callback(
-    Output("indicator-graphic", "figure"),
-    Input("xaxis-column", "value"),
-    Input("yaxis-column", "value"),
-    Input("xaxis-type", "value"),
-    Input("yaxis-type", "value"),
-    Input("plot_type", "value"),
-    Input("grouping", "value"),
-    Input("filter-query-input", "value"),
+    [
+        Output("indicator-graphic", "figure"),
+        Output("xaxis-type", "options"),
+        Output("xaxis-type", "value"),
+        Output("yaxis-type", "options"),
+        Output("yaxis-type", "value"),
+    ],
+    [
+        Input("xaxis-column", "value"),
+        Input("yaxis-column", "value"),
+        Input("xaxis-type", "value"),
+        Input("yaxis-type", "value"),
+        Input("plot_type", "value"),
+        Input("grouping", "value"),
+        Input("filter-query-input", "value"),
+    ],
 )
 def update_graph(
     xaxis_column_name,
@@ -385,9 +418,30 @@ def update_graph(
     grouping,
     query,
 ):
+    x_radio_options = [
+        {"label": label, "value": value}
+        for label, value in zip(
+            ["Linear Scale", "Logarithmic Scale"], ["Linear", "Log"]
+        )
+    ]
+    y_radio_options = [
+        {"label": label, "value": value}
+        for label, value in zip(
+            ["Logarithmic Scale", "Linear Scale"], ["Log", "Linear"]
+        )
+    ]
+    # check if xaxis_colum in non-numerical, if yes disable log selection
+    if xaxis_column_name != None and not is_numeric_dtype(df[xaxis_column_name]):
+        x_radio_options[1]["disabled"] = True
+        xaxis_type = "Linear"
+    if yaxis_column_name != None and not all(
+        [is_numeric_dtype(df[elem]) for elem in yaxis_column_name]
+    ):
+        y_radio_options[1]["disabled"] = True
+        yaxis_type = "Linear"
 
     if xaxis_column_name == None or yaxis_column_name == None:
-        return {}
+        return {}, x_radio_options, xaxis_type, y_radio_options, yaxis_type
 
     if (
         query is None or query == ""
@@ -446,12 +500,21 @@ def update_graph(
                 # marker_color=(df_[grouping] if grouping != None else None),
             elif plot_type == "Bar":
                 fig.add_trace(
-                    go.Bar(x=xaxis_data, y=cur_data, name=str(yaxis), offsetgroup=i,),
+                    go.Bar(
+                        x=xaxis_data,
+                        y=cur_data,
+                        name=str(yaxis),
+                        offsetgroup=i,
+                    ),
                     secondary_y=add_to_secondary,
                 )
             elif plot_type == "Line":
                 fig.add_trace(
-                    go.Line(x=xaxis_data, y=df_[yaxis], name=str(yaxis),),
+                    go.Line(
+                        x=xaxis_data,
+                        y=df_[yaxis],
+                        name=str(yaxis),
+                    ),
                     secondary_y=add_to_secondary,
                 )
 
@@ -526,7 +589,7 @@ def update_graph(
         margin={"l": 40, "b": 40, "t": 20, "r": 0},
     )
 
-    return fig
+    return fig, x_radio_options, xaxis_type, y_radio_options, yaxis_type
 
 
 if __name__ == "__main__":
