@@ -569,8 +569,18 @@ def update_graph(
                 ):
                     add_to_secondary = False
                 if add_to_secondary:
+                    magnitude_secondary = (
+                        magnitude
+                        if magnitude > magnitude_secondary
+                        else magnitude_secondary
+                    )
                     cols_ysecondary += " / {}".format(yaxis)
                 else:
+                    magnitude_primary = (
+                        magnitude
+                        if magnitude > magnitude_primary
+                        else magnitude_primary
+                    )
                     cols_yprimary += " / {}".format(yaxis)
 
             # Add traces
@@ -639,7 +649,6 @@ def update_graph(
                 log_y=yaxis_type == "Log",
                 color=(df_[grouping] if grouping != None else None),
             )
-
         elif plot_type == "Bar":
             fig = px.bar(
                 df_,
@@ -649,7 +658,6 @@ def update_graph(
                 log_y=yaxis_type == "Log",
                 color=(df_[grouping] if grouping != None else None),
             )
-
         elif plot_type == "Line":
             fig = px.line(
                 df_,
@@ -659,7 +667,6 @@ def update_graph(
                 log_y=yaxis_type == "Log",
                 color=(df_[grouping] if grouping != None else None),
             )
-
         # elif plot_type == "Predict":
         #     fig = px.line(  # remember: fix prediction
         #         df_predict,

@@ -32,6 +32,7 @@ done - add columns divided by population
 done - link filter query examples in visualization tool
 done - fix color for selection boxes (when item is selected)
 not done - fix size of multi selection box (you can fix it by chaning font size, but not sure if that is better)
+not done - should data of groups be aggregated with mean/sum, depending on the column? if no groupby is selected just group for date
 
 not done - after all of this, think about more plot types to add (earth map)
 not done - maybe add second plot to compare countries? 
