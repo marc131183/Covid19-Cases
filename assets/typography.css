@@ -3,3 +3,25 @@ body {background-color:#282b38;}
 .Select-value-label {
     color: #979A9C !important;
 }
+
+.rc-slider-track {
+background-color: #3875ff;
+}
+
+.rc-slider-dot-active {  
+border-color: #3875ff;
+border: solid 2px #3875ff;
+}
+
+.rc-slider-handle {
+background-color: #3875ff;
+border-color: #3875ff;
+}
+
+.rc-slider-handle:hover {
+border-color: #3875ff;
+}
+
+.rc-slider-handle-active:active {
+border-color: #3875ff;
+}

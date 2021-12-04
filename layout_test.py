@@ -9,7 +9,12 @@ import pandas as pd
 colors = {"bg": "#282b38", "bg_bright": "#3b3f53", "text": "#979A9C"}
 
 df = pd.DataFrame(
-    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
+    {
+        "location": np.arange(10),
+        "new_cases": np.arange(10),
+        "continent": np.arange(10),
+        "date": np.arange(10),
+    }
 )
 
 # Initialise the app

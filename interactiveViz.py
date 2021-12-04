@@ -11,6 +11,7 @@ from dash.dependencies import Input, Output
 import json
 import numpy as np
 import filter_dash
+import datetime
 from dash.exceptions import PreventUpdate
 
 from data_processing import getData
@@ -18,7 +19,12 @@ from predict import Model
 
 app = dash.Dash(__name__)
 
-colors = {"bg": "#282b38", "bg_bright": "#3b3f53", "text": "#979A9C"}
+colors = {
+    "bg": "#282b38",
+    "bg_bright": "#3b3f53",
+    "text": "#979A9C",
+    "buttonColor": "#4fc6e9",
+}
 
 df = getData()
 
@@ -194,6 +200,7 @@ app.layout = html.Div(
                         "width": "11.5%",
                         "float": "left",
                     },
+                    style={"color": colors["buttonColor"]},
                 ),
                 html.Div(style={"width": "1.5%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -220,6 +227,7 @@ app.layout = html.Div(
                         "width": "11.5%",
                         "float": "right",
                     },
+                    style={"color": colors["buttonColor"]},
                 ),
             ],
             style={"height": "20px"},
@@ -277,7 +285,53 @@ app.layout = html.Div(
             ],
             style={"height": "30px"},
         ),
-        html.Div(className="row", style={"height": "25px"}),
+        html.Div(className="row", style={"height": "20px"}),
+        html.Div(
+            className="row",
+            children=[
+                html.Div(style={"width": "1%", "height": "1px", "float": "left"}),
+                html.Div(
+                    "Date Range:",
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "20%",
+                        "float": "left",
+                    },
+                ),
+                html.Div(
+                    id="date-range-container",
+                    children="{} - {}".format(
+                        df["Date"].min().strftime("%d %b %Y"),
+                        df["Date"].max().strftime("%d %b %Y"),
+                    ),
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "13%",
+                        "float": "right",
+                    },
+                ),
+            ],
+            style={"height": "20px"},
+        ),
+        html.Div(className="row", style={"height": "10px"}),
+        html.Div(
+            className="row",
+            children=[
+                dcc.RangeSlider(
+                    id="daterange",
+                    min=0,
+                    max=len(df["Date"].unique()) - 1,
+                    step=1,
+                    allowCross=False,
+                    value=[0, len(df["Date"].unique()) - 1],
+                    # style={"backgroundColor": colors["buttonColor"]},
+                )
+            ],
+            style={"height": "30px"},
+        ),
+        html.Div(className="row", style={"height": "15px"}),
         dcc.Graph(id="indicator-graphic"),
         html.Div(
             className="row",
@@ -415,6 +469,7 @@ def display_click_data(clickData, xaxis_column, yaxis_column):
         Output("xaxis-type", "value"),
         Output("yaxis-type", "options"),
         Output("yaxis-type", "value"),
+        Output("date-range-container", "children"),
     ],
     [
         Input("xaxis-column", "value"),
@@ -424,6 +479,7 @@ def display_click_data(clickData, xaxis_column, yaxis_column):
         Input("plot_type", "value"),
         Input("grouping", "value"),
         Input("filter-query-input", "value"),
+        Input("daterange", "value"),
     ],
 )
 def update_graph(
@@ -434,6 +490,7 @@ def update_graph(
     plot_type,
     grouping,
     query,
+    date_slider,
 ):
     x_radio_options = [
         {"label": label, "value": value}
@@ -457,19 +514,33 @@ def update_graph(
         y_radio_options[1]["disabled"] = True
         yaxis_type = "Linear"
 
-    if xaxis_column_name == None or yaxis_column_name == None:
-        return {}, x_radio_options, xaxis_type, y_radio_options, yaxis_type
+    # filter data according to daterange and filter query
+    df_ = df.copy()
+    date_range = sorted(df_["Date"].unique())
+    min_date, max_date = pd.to_datetime(date_range[date_slider[0]]), pd.to_datetime(
+        date_range[date_slider[1]]
+    )
+    df_ = df_[(df_["Date"] >= min_date) & (df_["Date"] <= max_date)]
 
-    if (
+    if xaxis_column_name == None or yaxis_column_name == None:
+        return (
+            {},
+            x_radio_options,
+            xaxis_type,
+            y_radio_options,
+            yaxis_type,
+            "{} - {}".format(
+                min_date.strftime("%d %b %Y"),
+                max_date.strftime("%d %b %Y"),
+            ),
+        )
+
+    if not (
         query is None or query == ""
     ):  # remember: add options for filter and a country filter
-        df_ = df.copy()
-    else:
         derived_query_structure = filter_dash.split_query(query)
-        df_ = (
-            df.copy()
-            .groupby("Location")
-            .apply(lambda x: x[filter_dash.resolve_query(x, derived_query_structure)])
+        df_ = df_.groupby("Location").apply(
+            lambda x: x[filter_dash.resolve_query(x, derived_query_structure)]
         )
 
     if len(yaxis_column_name) > 1:
@@ -606,7 +677,17 @@ def update_graph(
         margin={"l": 40, "b": 40, "t": 20, "r": 0},
     )
 
-    return fig, x_radio_options, xaxis_type, y_radio_options, yaxis_type
+    return (
+        fig,
+        x_radio_options,
+        xaxis_type,
+        y_radio_options,
+        yaxis_type,
+        "{} - {}".format(
+            min_date.strftime("%d %b %Y"),
+            max_date.strftime("%d %b %Y"),
+        ),
+    )
 
 
 if __name__ == "__main__":
