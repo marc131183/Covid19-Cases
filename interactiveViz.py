@@ -25,6 +25,24 @@ df = getData()
 df = df.rename(columns={elem: elem[0].upper() + elem[1:] for elem in df.columns})
 df = df.sort_index(axis=1)
 
+# add columns divided by population
+cols_to_divide_by_population = [
+    "ConfirmedDeaths",
+    "New_cases",
+    "New_deaths",
+    "New_tests",
+    "New_vaccinations",
+    "People_fully_vaccinated",
+    "People_vaccinated",
+    "Total_cases",
+    "Total_tests",
+    "Total_vaccinations",
+]
+
+for col in cols_to_divide_by_population:
+    df["{}_perMillion".format(col)] = df[col] / (df["Population"] / 1e3)
+    print(df["{}_perMillion".format(col)].iloc[0])
+
 
 # load only some of the data for faster updating
 # df = pd.DataFrame(
