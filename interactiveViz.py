@@ -40,8 +40,7 @@ cols_to_divide_by_population = [
 ]
 
 for col in cols_to_divide_by_population:
-    df["{}_perMillion".format(col)] = df[col] / (df["Population"] / 1e3)
-    print(df["{}_perMillion".format(col)].iloc[0])
+    df["{}_per_thousand".format(col)] = df[col] / (df["Population"] / 1e3)
 
 
 # load only some of the data for faster updating
