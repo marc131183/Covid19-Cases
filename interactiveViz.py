@@ -461,10 +461,19 @@ def update_output(n_clicks):
     Input("indicator-graphic", "hoverData"),
     Input("xaxis-column", "value"),
     Input("yaxis-column", "value"),
+    Input("plot_type", "value"),
 )
-def display_hover_data(hoverData, xaxis_column, yaxis_column):
+def display_hover_data(hoverData, xaxis_column, yaxis_column, plot_type):
     if hoverData is None:
         return json.dumps(hoverData, indent=2)
+    elif plot_type == "Predict":
+        return json.dumps(
+            {
+                "Date": hoverData["points"][0]["x"],
+                "New cases": hoverData["points"][0]["y"],
+            },
+            indent=2,
+        )
     else:
         return json.dumps(
             {
@@ -480,10 +489,19 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column):
     Input("indicator-graphic", "clickData"),
     Input("xaxis-column", "value"),
     Input("yaxis-column", "value"),
+    Input("plot_type", "value"),
 )
-def display_click_data(clickData, xaxis_column, yaxis_column):
+def display_click_data(clickData, xaxis_column, yaxis_column, plot_type):
     if clickData is None:
         return json.dumps(clickData, indent=2)
+    elif plot_type == "Predict":
+        return json.dumps(
+            {
+                "Date": clickData["points"][0]["x"],
+                "New_cases": clickData["points"][0]["y"],
+            },
+            indent=2,
+        )
     else:
         return json.dumps(
             {
@@ -577,7 +595,7 @@ def update_graph(
             lambda x: x[filter_dash.resolve_query(x, derived_query_structure)]
         )
 
-    if len(yaxis_column_name) > 1 and yaxis_column_name != None:
+    if yaxis_column_name != None and len(yaxis_column_name) > 1:
         # Create figure with secondary y-axis
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         cols_yprimary = str(yaxis_column_name[0])
