@@ -15,7 +15,7 @@ line chart for countries/continents
 scatter plot attributes for x/y: location, continent, date, total cases, total_deaths, total_tests, hosp_patients, reproduction rate, weekly_icu_admissions, weekly_hosp_admissions, (vaccinations), positive_rate, stringency_index (what are people allowed to do), population, population_density, age, gdp_per_capita, extreme_poverty, cardiovasc_death_rate, diabetes_pervalence, female_smokers, male_smokers, handwashing_facilities, life_expectancy, hospital_beds_per_thousand, human_development_index, excess_mortality
 
 
-not done - random line when showing 2 countries (it is because a line is drawn from end date of one country to start date of other (sum or avg them up, after grouping?))
+done - random line when showing 2 countries (it is because a line is drawn from end date of one country to start date of other (sum or avg them up, after grouping?)) (hope this is better. Grouped by location)
 done - if second attribute selected, show new axis on the left, if more are selected, show them on the axis with similar magnitude
 done - ask di, if current filtering system is okay, if yes then increase box size for query
 done - sort parameters for axis selection

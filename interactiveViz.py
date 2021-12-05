@@ -718,9 +718,13 @@ def update_graph(
                 y=[df_with_country[ycolumn] for ycolumn in yaxis_column_name],
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df_with_country[grouping] if grouping != None else None),
+                color=(df_with_country[grouping] if grouping != None else df_with_country["Location"]),
             )
-        elif plot_type == "Predict": # remember: fix prediction
+            if grouping == None:
+                fig.update_layout(showlegend=False)
+                fig.update_traces(line_color='#636EFA')
+
+        elif plot_type == "Predict": 
             df_predict = model.predict(country)
 
             fig = px.line( 
