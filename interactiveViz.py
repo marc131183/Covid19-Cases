@@ -358,7 +358,6 @@ app.layout = html.Div(
                     step=1,
                     allowCross=False,
                     value=[0, len(df["Date"].unique()) - 1],
-                    # style={"backgroundColor": colors["buttonColor"]},
                 )
             ],
             style={"height": "30px"},
@@ -579,8 +578,17 @@ def update_graph(
         and plot_type != "Predict"
         or (country == None and plot_type == "Predict")
     ):
+        fig = go.Figure()
+        fig.update_layout(
+            plot_bgcolor=colors["bg"],
+            paper_bgcolor=colors["bg"],
+            font_color=colors["text"],
+            clickmode="event+select",
+            margin={"l": 40, "b": 40, "t": 20, "r": 0},
+        )
+
         return (
-            {},
+            fig,
             x_radio_options,
             xaxis_type,
             y_radio_options,
@@ -610,8 +618,8 @@ def update_graph(
 
         xaxis_data = df_[xaxis_column_name]
         magnitude_primary, magnitude_secondary = (
-            df_[yaxis_column_name[0]].mean(),
-            df_[yaxis_column_name[1]].mean(),
+            df_[yaxis_column_name[0]].max(),
+            df_[yaxis_column_name[1]].max(),
         )
         symbols = SymbolValidator().values
         # markers https://plotly.com/python/marker-style/
@@ -621,7 +629,7 @@ def update_graph(
                 add_to_secondary = i == 1
             else:
                 # add axis to the one that's magnitude is closer
-                magnitude = cur_data.mean()
+                magnitude = cur_data.max()
                 add_to_secondary = True
                 if np.linalg.norm(magnitude - magnitude_primary) < np.linalg.norm(
                     magnitude - magnitude_secondary
