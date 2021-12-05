@@ -180,7 +180,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "26.3%",
+                        "width": "17%",
                         "float": "left",
                     },
                 ),
@@ -196,10 +196,20 @@ app.layout = html.Div(
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "11.5%",
+                        "width": "10%",
                         "float": "left",
                     },
                     style={"color": colors["buttonColor"]},
+                ),
+                html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
+                html.Div(
+                    "Country:",
+                    style={
+                        "color": colors["text"],
+                        "fontSize": 20,
+                        "width": "22.5%",
+                        "float": "left",
+                    },
                 ),
                 html.Div(style={"width": "1.5%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -223,7 +233,7 @@ app.layout = html.Div(
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "11.5%",
+                        "width": "10%",
                         "float": "right",
                     },
                     style={"color": colors["buttonColor"]},
@@ -254,7 +264,30 @@ app.layout = html.Div(
                         ),
                     ],
                     style={
-                        "width": "49%",
+                        "width": "37%",
+                        "float": "left",
+                    },
+                ),
+                html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
+                html.Div(
+                    children=[
+                        dcc.Dropdown(
+                            id="country",
+                            placeholder="Choose which country to visualize",
+                            options=[
+                                {"label": elem, "value": elem} for elem in sorted(set(df["Location"]))
+                            ],
+                            style={
+                                "color": colors["text"],
+                                "backgroundColor": colors["bg_bright"],
+                                "fontSize": 25,
+                                "border-color": "#ffffff",
+                                "border-radius": 5,
+                            },
+                        ),
+                    ],
+                    style={
+                        "width": "22%",
                         "float": "left",
                     },
                 ),
@@ -277,7 +310,7 @@ app.layout = html.Div(
                         ),
                     ],
                     style={
-                        "width": "49%",
+                        "width": "37%",
                         "float": "right",
                     },
                 ),
@@ -393,28 +426,6 @@ app.layout = html.Div(
                         "fontSize": 15,
                         "width": "50%",
                         "display": "inline-block",
-                        "float": "right",
-                    },
-                ),
-                html.Div(
-                    children=[
-                        dcc.Dropdown(
-                            id="country",
-                            placeholder="Choose which country to visualize",
-                            options=[
-                                {"label": elem, "value": elem} for elem in df["Location"]
-                            ],
-                            style={
-                                "color": colors["text"],
-                                "backgroundColor": colors["bg_bright"],
-                                "fontSize": 25,
-                                "border-color": "#ffffff",
-                                "border-radius": 5,
-                            },
-                        ),
-                    ],
-                    style={
-                        "width": "49%",
                         "float": "right",
                     },
                 ),
@@ -545,7 +556,7 @@ def update_graph(
     )
     df_ = df_[(df_["Date"] >= min_date) & (df_["Date"] <= max_date)]
 
-    if (xaxis_column_name == None or yaxis_column_name == None) and plot_type != "Predict":
+    if (xaxis_column_name == None or yaxis_column_name == None) and plot_type != "Predict" or (country == None and plot_type == "Predict"):
         return (
             {},
             x_radio_options,
@@ -566,79 +577,78 @@ def update_graph(
             lambda x: x[filter_dash.resolve_query(x, derived_query_structure)]
         )
 
-    if plot_type != "Predict":
-        if len(yaxis_column_name) > 1:
-            # Create figure with secondary y-axis
-            fig = make_subplots(specs=[[{"secondary_y": True}]])
-            cols_yprimary = str(yaxis_column_name[0])
-            cols_ysecondary = str(yaxis_column_name[1])
+    if len(yaxis_column_name) > 1 and yaxis_column_name != None:
+        # Create figure with secondary y-axis
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+        cols_yprimary = str(yaxis_column_name[0])
+        cols_ysecondary = str(yaxis_column_name[1])
 
-            xaxis_data = df_[xaxis_column_name]
-            magnitude_primary, magnitude_secondary = (
-                df_[yaxis_column_name[0]].mean(),
-                df_[yaxis_column_name[1]].mean(),
-            )
-            symbols = SymbolValidator().values
-            # markers https://plotly.com/python/marker-style/
-            for i, yaxis in enumerate(yaxis_column_name):
-                cur_data = df_[yaxis]
-                if i == 0 or i == 1:
-                    add_to_secondary = i == 1
+        xaxis_data = df_[xaxis_column_name]
+        magnitude_primary, magnitude_secondary = (
+            df_[yaxis_column_name[0]].mean(),
+            df_[yaxis_column_name[1]].mean(),
+        )
+        symbols = SymbolValidator().values
+        # markers https://plotly.com/python/marker-style/
+        for i, yaxis in enumerate(yaxis_column_name):
+            cur_data = df_[yaxis]
+            if i == 0 or i == 1:
+                add_to_secondary = i == 1
+            else:
+                # add axis to the one that's magnitude is closer
+                magnitude = cur_data.mean()
+                add_to_secondary = True
+                if np.linalg.norm(magnitude - magnitude_primary) < np.linalg.norm(
+                    magnitude - magnitude_secondary
+                ):
+                    add_to_secondary = False
+                if add_to_secondary:
+                    magnitude_secondary = (
+                        magnitude
+                        if magnitude > magnitude_secondary
+                        else magnitude_secondary
+                    )
+                    cols_ysecondary += " / {}".format(yaxis)
                 else:
-                    # add axis to the one that's magnitude is closer
-                    magnitude = cur_data.mean()
-                    add_to_secondary = True
-                    if np.linalg.norm(magnitude - magnitude_primary) < np.linalg.norm(
-                        magnitude - magnitude_secondary
-                    ):
-                        add_to_secondary = False
-                    if add_to_secondary:
-                        magnitude_secondary = (
-                            magnitude
-                            if magnitude > magnitude_secondary
-                            else magnitude_secondary
-                        )
-                        cols_ysecondary += " / {}".format(yaxis)
-                    else:
-                        magnitude_primary = (
-                            magnitude
-                            if magnitude > magnitude_primary
-                            else magnitude_primary
-                        )
-                        cols_yprimary += " / {}".format(yaxis)
+                    magnitude_primary = (
+                        magnitude
+                        if magnitude > magnitude_primary
+                        else magnitude_primary
+                    )
+                    cols_yprimary += " / {}".format(yaxis)
 
-                # Add traces
-                if plot_type == "Scatter":
-                    fig.add_trace(
-                        go.Scatter(
-                            x=xaxis_data,
-                            y=cur_data,
-                            name=str(yaxis),
-                            mode="markers",
-                            marker_symbol=symbols[i],
-                        ),
-                        secondary_y=add_to_secondary,
-                    )
-                    # marker_color=(df_[grouping] if grouping != None else None),
-                elif plot_type == "Bar":
-                    fig.add_trace(
-                        go.Bar(
-                            x=xaxis_data,
-                            y=cur_data,
-                            name=str(yaxis),
-                            offsetgroup=i,
-                        ),
-                        secondary_y=add_to_secondary,
-                    )
-                elif plot_type == "Line":
-                    fig.add_trace(
-                        go.Line(
-                            x=xaxis_data,
-                            y=df_[yaxis],
-                            name=str(yaxis),
-                        ),
-                        secondary_y=add_to_secondary,
-                    )
+            # Add traces
+            if plot_type == "Scatter":
+                fig.add_trace(
+                    go.Scatter(
+                        x=xaxis_data,
+                        y=cur_data,
+                        name=str(yaxis),
+                        mode="markers",
+                        marker_symbol=symbols[i],
+                    ),
+                    secondary_y=add_to_secondary,
+                )
+                # marker_color=(df_[grouping] if grouping != None else None),
+            elif plot_type == "Bar":
+                fig.add_trace(
+                    go.Bar(
+                        x=xaxis_data,
+                        y=cur_data,
+                        name=str(yaxis),
+                        offsetgroup=i,
+                    ),
+                    secondary_y=add_to_secondary,
+                )
+            elif plot_type == "Line":
+                fig.add_trace(
+                    go.Line(
+                        x=xaxis_data,
+                        y=df_[yaxis],
+                        name=str(yaxis),
+                    ),
+                    secondary_y=add_to_secondary,
+                )
 
         # Set x-axis title
         if xaxis_type == "Log":
@@ -664,32 +674,33 @@ def update_graph(
             row=1,
         )
     else:
+        df_with_country = df_[df_["Location"] == country] if country != None else df_
         if plot_type == "Scatter":  # remember: only make some parameters available?
             fig = px.scatter(
-                df_,
-                x=df_[xaxis_column_name],
-                y=[df_[ycolumn] for ycolumn in yaxis_column_name],
+                df_with_country,
+                x=df_with_country[xaxis_column_name],
+                y=[df_with_country[ycolumn] for ycolumn in yaxis_column_name],
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df_[grouping] if grouping != None else None),
+                color=(df_with_country[grouping] if grouping != None else None),
             )
         elif plot_type == "Bar":
             fig = px.bar(
-                df_,
-                x=df_[xaxis_column_name],
-                y=[df_[ycolumn] for ycolumn in yaxis_column_name],
+                df_with_country,
+                x=df_with_country[xaxis_column_name],
+                y=[df_with_country[ycolumn] for ycolumn in yaxis_column_name],
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df_[grouping] if grouping != None else None),
+                color=(df_with_country[grouping] if grouping != None else None),
             )
         elif plot_type == "Line":
             fig = px.line(
-                df_,
-                x=df_[xaxis_column_name],
-                y=[df_[ycolumn] for ycolumn in yaxis_column_name],
+                df_with_country,
+                x=df_with_country[xaxis_column_name],
+                y=[df_with_country[ycolumn] for ycolumn in yaxis_column_name],
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df_[grouping] if grouping != None else None),
+                color=(df_with_country[grouping] if grouping != None else None),
             )
         elif plot_type == "Predict": # remember: fix prediction
             df_predict = model.predict(country)
