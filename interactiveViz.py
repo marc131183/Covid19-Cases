@@ -180,7 +180,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "17%",
+                        "width": "15%",
                         "float": "left",
                     },
                 ),
@@ -196,28 +196,26 @@ app.layout = html.Div(
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "10%",
+                        "width": "10.5%",
                         "float": "left",
                     },
                     style={"color": colors["buttonColor"]},
                 ),
-                html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
                     "Country:",
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "22.5%",
+                        "width": "36%",
                         "float": "left",
                     },
                 ),
-                html.Div(style={"width": "1.5%", "height": "1px", "float": "left"}),
                 html.Div(
                     "X-Axis:",
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "10%",
+                        "width": "5%",
                         "float": "left",
                     },
                 ),
@@ -233,7 +231,7 @@ app.layout = html.Div(
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "10%",
+                        "width": "9.5%",
                         "float": "right",
                     },
                     style={"color": colors["buttonColor"]},
@@ -264,7 +262,7 @@ app.layout = html.Div(
                         ),
                     ],
                     style={
-                        "width": "37%",
+                        "width": "34%",
                         "float": "left",
                     },
                 ),
@@ -275,7 +273,8 @@ app.layout = html.Div(
                             id="country",
                             placeholder="Choose which country to visualize",
                             options=[
-                                {"label": elem, "value": elem} for elem in sorted(set(df["Location"]))
+                                {"label": elem, "value": elem}
+                                for elem in sorted(df["Location"].unique())
                             ],
                             style={
                                 "color": colors["text"],
@@ -284,10 +283,11 @@ app.layout = html.Div(
                                 "border-color": "#ffffff",
                                 "border-radius": 5,
                             },
+                            multi=True,
                         ),
                     ],
                     style={
-                        "width": "22%",
+                        "width": "34%",
                         "float": "left",
                     },
                 ),
@@ -310,7 +310,7 @@ app.layout = html.Div(
                         ),
                     ],
                     style={
-                        "width": "37%",
+                        "width": "28%",
                         "float": "right",
                     },
                 ),
@@ -574,7 +574,11 @@ def update_graph(
     )
     df_ = df_[(df_["Date"] >= min_date) & (df_["Date"] <= max_date)]
 
-    if (xaxis_column_name == None or yaxis_column_name == None) and plot_type != "Predict" or (country == None and plot_type == "Predict"):
+    if (
+        (xaxis_column_name == None or yaxis_column_name == None)
+        and plot_type != "Predict"
+        or (country == None and plot_type == "Predict")
+    ):
         return (
             {},
             x_radio_options,
@@ -594,6 +598,9 @@ def update_graph(
         df_ = df_.groupby("Location").apply(
             lambda x: x[filter_dash.resolve_query(x, derived_query_structure)]
         )
+
+    if country != None and country != []:
+        df_ = df_[df_["Location"].isin(country)]
 
     if yaxis_column_name != None and len(yaxis_column_name) > 1:
         # Create figure with secondary y-axis
@@ -692,53 +699,63 @@ def update_graph(
             row=1,
         )
     else:
-        df_with_country = df_[df_["Location"] == country] if country != None else df_
         if plot_type == "Scatter":  # remember: only make some parameters available?
             fig = px.scatter(
-                df_with_country,
-                x=df_with_country[xaxis_column_name],
-                y=[df_with_country[ycolumn] for ycolumn in yaxis_column_name],
+                df_,
+                x=xaxis_column_name,
+                y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df_with_country[grouping] if grouping != None else None),
+                color=(grouping if grouping != None else None),
             )
         elif plot_type == "Bar":
             fig = px.bar(
-                df_with_country,
-                x=df_with_country[xaxis_column_name],
-                y=[df_with_country[ycolumn] for ycolumn in yaxis_column_name],
+                df_,
+                x=xaxis_column_name,
+                y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df_with_country[grouping] if grouping != None else None),
+                color=(grouping if grouping != None else None),
             )
         elif plot_type == "Line":
             fig = px.line(
-                df_with_country,
-                x=df_with_country[xaxis_column_name],
-                y=[df_with_country[ycolumn] for ycolumn in yaxis_column_name],
+                df_,
+                x=xaxis_column_name,
+                y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(df_with_country[grouping] if grouping != None else df_with_country["Location"]),
+                color=(grouping if grouping != None else df_["Location"]),
             )
             if grouping == None:
                 fig.update_layout(showlegend=False)
-                fig.update_traces(line_color='#636EFA')
+                fig.update_traces(line_color="#636EFA")
+        elif plot_type == "Predict":
+            fig = go.Figure()
 
-        elif plot_type == "Predict": 
-            df_predict = model.predict(country)
+            for i, con in enumerate(country):
+                pred_x, pred_y, hist_x, hist_y = model.predict(con)
 
-            fig = px.line( 
-                df_predict,
-                x=df_predict[2],
-                y=df_predict[3],
-                log_x=xaxis_type == "Log",
-                log_y=yaxis_type == "Log",
-            ) 
-            fig.add_trace(go.Line( 
-                x=df_predict[0],
-                y=df_predict[1],
-                name="Prediction",),
-            )
+                fig.add_trace(
+                    go.Scatter(
+                        x=hist_x,
+                        y=hist_y,
+                        name="History {}".format(con),
+                        line=dict(width=4, color=px.colors.qualitative.Plotly[i]),
+                    )
+                )
+                fig.add_trace(
+                    go.Scatter(
+                        x=pred_x,
+                        y=pred_y,
+                        name="Prediction {}".format(con),
+                        line=dict(
+                            width=4, dash="dot", color=px.colors.qualitative.Plotly[i]
+                        ),
+                    )
+                )
+
+            if yaxis_type == "Log":
+                fig.update_yaxes(type="log")
 
     fig.update_layout(
         plot_bgcolor=colors["bg"],
