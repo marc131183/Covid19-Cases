@@ -143,7 +143,10 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={"width": "20%", "float": "left",},
+                    style={
+                        "width": "20%",
+                        "float": "left",
+                    },
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 dcc.Input(
@@ -176,7 +179,10 @@ app.layout = html.Div(
                             },
                         )
                     ],
-                    style={"width": "20%", "float": "right",},
+                    style={
+                        "width": "20%",
+                        "float": "right",
+                    },
                 ),
             ],
             style={"height": "30px"},
@@ -190,7 +196,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "13%",
+                        "width": "14%",
                         "float": "left",
                     },
                 ),
@@ -199,33 +205,36 @@ app.layout = html.Div(
                     options=[
                         {"label": label, "value": value}
                         for label, value in zip(
-                            ["Linear", "Logarithmic"], ["Linear", "Log"]
+                            ["Logarithmic", "Linear"], ["Log", "Linear"]
                         )
                     ],
                     value="Linear",
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "11.5%",
+                        "width": "10%",
                         "float": "left",
+                        "textAlign": "right",
                     },
                     style={"color": colors["buttonColor"]},
                 ),
+                html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
                     "Country:",
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "36%",
+                        "width": "34%",
                         "float": "left",
                     },
                 ),
+                html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
                     "X-Axis:",
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "4%",
+                        "width": "8%",
                         "float": "left",
                     },
                 ),
@@ -241,8 +250,9 @@ app.layout = html.Div(
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "10.5%",
-                        "float": "right",
+                        "width": "10%",
+                        "float": "left",
+                        "textAlign": "right",
                     },
                     style={"color": colors["buttonColor"]},
                 ),
@@ -274,7 +284,10 @@ app.layout = html.Div(
                             multi=True,
                         ),
                     ],
-                    style={"width": "34%", "float": "left",},
+                    style={
+                        "width": "34%",
+                        "float": "left",
+                    },
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -296,7 +309,10 @@ app.layout = html.Div(
                             multi=True,
                         ),
                     ],
-                    style={"width": "34%", "float": "left",},
+                    style={
+                        "width": "34%",
+                        "float": "left",
+                    },
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -316,7 +332,10 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={"width": "28%", "float": "right",},
+                    style={
+                        "width": "28%",
+                        "float": "right",
+                    },
                 ),
             ],
             style={"height": "30px"},
@@ -331,10 +350,11 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "20%",
+                        "width": "30%",
                         "float": "left",
                     },
                 ),
+                html.Div(style={"width": "1%", "height": "1px", "float": "right"}),
                 html.Div(
                     id="date-range-container",
                     children="{} - {}".format(
@@ -344,12 +364,11 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "20%",
+                        "width": "30%",
                         "float": "right",
                         "textAlign": "right",
                     },
                 ),
-                html.Div(style={"width": "1%", "height": "1px", "float": "left"}),
             ],
             style={"height": "20px"},
         ),
@@ -545,7 +564,10 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column, plot_type):
     Input("plot_type", "value"),
 )
 def display_click_data(
-    clickData, xaxis_column, yaxis_column, plot_type,
+    clickData,
+    xaxis_column,
+    yaxis_column,
+    plot_type,
 ):
     if clickData is None:
         return json.dumps(clickData, indent=2)
@@ -607,7 +629,7 @@ def update_graph(
     ]
     y_radio_options = [
         {"label": label, "value": value}
-        for label, value in zip(["Logarithmic", "Linear"], ["Log", "Linear"])
+        for label, value in zip(["Linear", "Logarithmic"], ["Linear", "Log"])
     ]
     # check if xaxis_colum in non-numerical, if yes disable log selection
     if xaxis_column_name != None and not is_numeric_dtype(df[xaxis_column_name]):
@@ -649,7 +671,8 @@ def update_graph(
             y_radio_options,
             yaxis_type,
             "{} - {}".format(
-                min_date.strftime("%d %b %Y"), max_date.strftime("%d %b %Y"),
+                min_date.strftime("%d %b %Y"),
+                max_date.strftime("%d %b %Y"),
             ),
         )
 
@@ -708,8 +731,6 @@ def update_graph(
             [elem[:-13] for elem in sum_divide_population]
         ] / (df_["Population"].to_numpy()[:, np.newaxis] / 1e3)
 
-    print(df_)
-
     if yaxis_column_name != None and len(yaxis_column_name) > 1:
         # Create figure with secondary y-axis
         fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -765,12 +786,21 @@ def update_graph(
                 # marker_color=(df_[grouping] if grouping != None else None),
             elif plot_type == "Bar":
                 fig.add_trace(
-                    go.Bar(x=xaxis_data, y=cur_data, name=str(yaxis), offsetgroup=i,),
+                    go.Bar(
+                        x=xaxis_data,
+                        y=cur_data,
+                        name=str(yaxis),
+                        offsetgroup=i,
+                    ),
                     secondary_y=add_to_secondary,
                 )
             elif plot_type == "Line":
                 fig.add_trace(
-                    go.Line(x=xaxis_data, y=df_[yaxis], name=str(yaxis),),
+                    go.Line(
+                        x=xaxis_data,
+                        y=df_[yaxis],
+                        name=str(yaxis),
+                    ),
                     secondary_y=add_to_secondary,
                 )
 
@@ -870,7 +900,10 @@ def update_graph(
         xaxis_type,
         y_radio_options,
         yaxis_type,
-        "{} - {}".format(min_date.strftime("%d %b %Y"), max_date.strftime("%d %b %Y"),),
+        "{} - {}".format(
+            min_date.strftime("%d %b %Y"),
+            max_date.strftime("%d %b %Y"),
+        ),
     )
 
 
