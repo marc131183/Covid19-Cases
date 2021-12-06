@@ -46,10 +46,26 @@ cols_to_divide_by_population = [
     "Total_tests",
     "Total_vaccinations",
 ]
-
 for col in cols_to_divide_by_population:
     df["{}_per_thousand".format(col)] = df[col] / (df["Population"] / 1e3)
 
+cols_to_sum_up = cols_to_divide_by_population
+cols_to_sum_up_with_population = [
+    "{}_per_thousand".format(elem) for elem in cols_to_divide_by_population
+]
+cols_to_ignore = [
+    "Date",
+    "CountryCode",
+    "Continent",
+    "Location",
+    "Weekday",
+    "Population",
+]
+cols_to_mean_up = list(
+    df.columns.difference(
+        cols_to_sum_up + cols_to_sum_up_with_population + cols_to_ignore
+    )
+)
 
 # load only some of the data for faster updating
 # df = pd.DataFrame(
@@ -249,8 +265,11 @@ app.layout = html.Div(
                             id="yaxis-column",
                             placeholder="Choose which column to visualize for y-axis",
                             options=[
-                                {"label": elem, "value": elem} for elem in df.columns
-                            ],
+                                {"label": elem, "value": elem}
+                                for elem in df.columns
+                                if not elem in cols_to_ignore
+                            ]
+                            + [{"label": "Population", "value": "Population"}],
                             style={
                                 "color": colors["text"],
                                 "backgroundColor": colors["bg_bright"],
@@ -345,6 +364,7 @@ app.layout = html.Div(
                         "textAlign": "right",
                     },
                 ),
+                html.Div(style={"width": "1%", "height": "1px", "float": "left"}),
             ],
             style={"height": "20px"},
         ),
@@ -607,6 +627,52 @@ def update_graph(
     if country != None and country != []:
         df_ = df_[df_["Location"].isin(country)]
 
+    # aggregate data according to xaxis and the color-by (if given)
+    cols_to_mean_up_present = list(set(cols_to_mean_up) & set(yaxis_column_name))
+    cols_to_mean_up_present_new_names = []
+    for i, col in enumerate(cols_to_mean_up_present):
+        df_["{}_times_population".format(col)] = df_[col] * df_["Population"]
+        cols_to_mean_up_present_new_names.append("{}_times_population".format(col))
+
+    cols = (
+        list(set(yaxis_column_name) - set(cols_to_mean_up_present))
+        + cols_to_mean_up_present_new_names
+    )
+
+    sum_divide_population = list(
+        set(cols_to_sum_up_with_population) & set(yaxis_column_name)
+    )
+    for col in sum_divide_population:
+        cols.append(col[:-13])
+    cols = list(set(cols))
+    if grouping != None:
+        df_ = (
+            df_[set(cols + [xaxis_column_name, grouping, "Population"])]
+            .groupby(xaxis_column_name)
+            .apply(lambda x: x.groupby(grouping).sum())
+        )
+        df_.reset_index(inplace=True)
+    else:
+        df_ = (
+            df_[set(cols + [xaxis_column_name, "Population"])]
+            .groupby(xaxis_column_name)
+            .sum()
+        )
+        df_.reset_index(inplace=True)
+
+    if cols_to_mean_up_present != []:
+        df_[cols_to_mean_up_present] = (
+            df_[cols_to_mean_up_present_new_names]
+            / df_["Population"].to_numpy()[:, np.newaxis]
+        )
+
+    if sum_divide_population != []:
+        df_[sum_divide_population] = df_[
+            [elem[:-13] for elem in sum_divide_population]
+        ] / (df_["Population"].to_numpy()[:, np.newaxis] / 1e3)
+
+    print(df_)
+
     if yaxis_column_name != None and len(yaxis_column_name) > 1:
         # Create figure with secondary y-axis
         fig = make_subplots(specs=[[{"secondary_y": True}]])
@@ -729,11 +795,11 @@ def update_graph(
                 y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(grouping if grouping != None else df_["Location"]),
+                color=(grouping if grouping != None else None),
             )
-            if grouping == None:
-                fig.update_layout(showlegend=False)
-                fig.update_traces(line_color="#636EFA")
+            # if grouping == None:
+            #     fig.update_layout(showlegend=False)
+            #     fig.update_traces(line_color="#636EFA")
         elif plot_type == "Predict":
             fig = go.Figure()
 
