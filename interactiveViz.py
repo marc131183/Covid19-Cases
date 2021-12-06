@@ -350,7 +350,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "14%",
+                        "width": "25%",
                         "float": "left",
                     },
                 ),
@@ -364,7 +364,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "14%",
+                        "width": "25%",
                         "float": "right",
                         "textAlign": "right",
                     },
