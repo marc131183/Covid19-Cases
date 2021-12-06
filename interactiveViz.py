@@ -697,49 +697,50 @@ def update_graph(
     if country != None and country != []:
         df_ = df_[df_["Location"].isin(country)]
 
-    # aggregate data according to xaxis and the color-by (if given)
-    cols_to_mean_up_present = list(set(cols_to_mean_up) & set(yaxis_column_name))
-    cols_to_mean_up_present_new_names = []
-    for i, col in enumerate(cols_to_mean_up_present):
-        df_["{}_times_population".format(col)] = df_[col] * df_["Population"]
-        cols_to_mean_up_present_new_names.append("{}_times_population".format(col))
+    if plot_type != "Predict":
+        # aggregate data according to xaxis and the color-by (if given)
+        cols_to_mean_up_present = list(set(cols_to_mean_up) & set(yaxis_column_name))
+        cols_to_mean_up_present_new_names = []
+        for i, col in enumerate(cols_to_mean_up_present):
+            df_["{}_times_population".format(col)] = df_[col] * df_["Population"]
+            cols_to_mean_up_present_new_names.append("{}_times_population".format(col))
 
-    cols = (
-        list(set(yaxis_column_name) - set(cols_to_mean_up_present))
-        + cols_to_mean_up_present_new_names
-    )
-
-    sum_divide_population = list(
-        set(cols_to_sum_up_with_population) & set(yaxis_column_name)
-    )
-    for col in sum_divide_population:
-        cols.append(col[:-13])
-    cols = list(set(cols))
-    if grouping != None:
-        df_ = (
-            df_[set(cols + [xaxis_column_name, grouping, "Population"])]
-            .groupby([xaxis_column_name, grouping])
-            .sum()
-        )
-    else:
-        df_ = (
-            df_[set(cols + [xaxis_column_name, "Population"])]
-            .groupby(xaxis_column_name, as_index=False)
-            .sum()
+        cols = (
+            list(set(yaxis_column_name) - set(cols_to_mean_up_present))
+            + cols_to_mean_up_present_new_names
         )
 
-    df_.reset_index(inplace=True)
-
-    if cols_to_mean_up_present != []:
-        df_[cols_to_mean_up_present] = (
-            df_[cols_to_mean_up_present_new_names]
-            / df_["Population"].to_numpy()[:, np.newaxis]
+        sum_divide_population = list(
+            set(cols_to_sum_up_with_population) & set(yaxis_column_name)
         )
+        for col in sum_divide_population:
+            cols.append(col[:-13])
+        cols = list(set(cols))
+        if grouping != None:
+            df_ = (
+                df_[set(cols + [xaxis_column_name, grouping, "Population"])]
+                .groupby([xaxis_column_name, grouping])
+                .sum()
+            )
+        else:
+            df_ = (
+                df_[set(cols + [xaxis_column_name, "Population"])]
+                .groupby(xaxis_column_name, as_index=False)
+                .sum()
+            )
 
-    if sum_divide_population != []:
-        df_[sum_divide_population] = df_[
-            [elem[:-13] for elem in sum_divide_population]
-        ] / (df_["Population"].to_numpy()[:, np.newaxis] / 1e3)
+        df_.reset_index(inplace=True)
+
+        if cols_to_mean_up_present != []:
+            df_[cols_to_mean_up_present] = (
+                df_[cols_to_mean_up_present_new_names]
+                / df_["Population"].to_numpy()[:, np.newaxis]
+            )
+
+        if sum_divide_population != []:
+            df_[sum_divide_population] = df_[
+                [elem[:-13] for elem in sum_divide_population]
+            ] / (df_["Population"].to_numpy()[:, np.newaxis] / 1e3)
 
     if yaxis_column_name != None and len(yaxis_column_name) > 1:
         # Create figure with secondary y-axis
