@@ -340,7 +340,7 @@ app.layout = html.Div(
             ],
             style={"height": "30px"},
         ),
-        html.Div(className="row", style={"height": "20px"}),
+        html.Div(className="row", style={"height": "30px"}),
         html.Div(
             className="row",
             children=[
@@ -350,7 +350,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "30%",
+                        "width": "14%",
                         "float": "left",
                     },
                 ),
@@ -364,7 +364,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "30%",
+                        "width": "14%",
                         "float": "right",
                         "textAlign": "right",
                     },
