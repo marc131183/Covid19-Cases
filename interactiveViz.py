@@ -143,10 +143,7 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={
-                        "width": "20%",
-                        "float": "left",
-                    },
+                    style={"width": "20%", "float": "left",},
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 dcc.Input(
@@ -179,10 +176,7 @@ app.layout = html.Div(
                             },
                         )
                     ],
-                    style={
-                        "width": "20%",
-                        "float": "right",
-                    },
+                    style={"width": "20%", "float": "right",},
                 ),
             ],
             style={"height": "30px"},
@@ -280,10 +274,7 @@ app.layout = html.Div(
                             multi=True,
                         ),
                     ],
-                    style={
-                        "width": "34%",
-                        "float": "left",
-                    },
+                    style={"width": "34%", "float": "left",},
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -305,10 +296,7 @@ app.layout = html.Div(
                             multi=True,
                         ),
                     ],
-                    style={
-                        "width": "34%",
-                        "float": "left",
-                    },
+                    style={"width": "34%", "float": "left",},
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -328,10 +316,7 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={
-                        "width": "28%",
-                        "float": "right",
-                    },
+                    style={"width": "28%", "float": "right",},
                 ),
             ],
             style={"height": "30px"},
@@ -392,21 +377,20 @@ app.layout = html.Div(
                     [
                         dcc.Markdown(
                             """
-                    **Hover Data**
-                    Mouse over values in the graph.
+                    Mouse over values in the graph
                 """
                         ),
                         html.Pre(
                             id="hover-data",
                             style={
-                                "border": "thin lightgrey solid",
+                                # "border": "thin lightgrey solid",
                                 "overflowX": "scroll",
                             },
                         ),
                     ],
                     className="three columns",
                     style={
-                        "width": "24%",
+                        "width": "25%",
                         "display": "inline-block",
                         "color": colors["text"],
                     },
@@ -415,21 +399,20 @@ app.layout = html.Div(
                     [
                         dcc.Markdown(
                             """
-                    **Click Data**
-                    Click on points in the graph.
+                    Click on points in the graph
                 """
                         ),
                         html.Pre(
                             id="click-data",
                             style={
-                                "border": "thin lightgrey solid",
+                                # "border": "thin lightgrey solid",
                                 "overflowX": "scroll",
                             },
                         ),
                     ],
                     className="three columns",
                     style={
-                        "width": "24%",
+                        "width": "25%",
                         "display": "inline-block",
                         "color": colors["text"],
                     },
@@ -443,7 +426,7 @@ app.layout = html.Div(
                     ],
                     style={
                         "color": colors["text"],
-                        "fontSize": 15,
+                        "fontSize": 14,
                         "width": "50%",
                         "display": "inline-block",
                         "float": "right",
@@ -463,16 +446,64 @@ def update_output(n_clicks):
     if n_clicks is None or (n_clicks % 2 == 0):
         return {}
     else:
+        description1 = html.P(
+            children=[
+                html.Span("1. "),
+                html.Strong('{Continent} = "Asia"'),
+                html.Br(),
+                html.Span("Get all countries that are in Asia"),
+            ]
+        )
+        description2 = html.P(
+            children=[
+                html.Span("2. "),
+                html.Strong('{Continent} = "Europe" or {Population} >= 10000000'),
+                html.Br(),
+                html.Span(
+                    "Get all countries that are either in Europe or have a population of 10000000 or bigger"
+                ),
+            ]
+        )
+        description3 = html.P(
+            children=[
+                html.Span("3. "),
+                html.Strong(
+                    '({Continent} = "North America" or {Continent} = "South America") and {Human_development_index} < 30'
+                ),
+                html.Br(),
+                html.Span(
+                    "Get all countries that are either in North- or South America and have a human development index of smaller than 30"
+                ),
+            ]
+        )
+        description4 = html.P(
+            children=[
+                html.Span("4. "),
+                html.Strong("mean{New_cases} >= 300 and max{New_deaths} < 100"),
+                html.Br(),
+                html.Span(
+                    "Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths below 100"
+                ),
+            ]
+        )
+        description5 = html.P(
+            children=[
+                html.Span("5. "),
+                html.Strong(
+                    "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}"
+                ),
+                html.Br(),
+                html.Span(
+                    "Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)"
+                ),
+            ]
+        )
         return [
-            '{Continent} = "Asia": Get all countries that are in Asia:',
-            html.Br(),
-            '{Continent} = "Europe" or {Population} >= 10000000: Get all countries that are either in Europe or have a population of 10000000 or bigger',
-            html.Br(),
-            '({Continent} = "North America" or {Continent} = "South America") and {Human_development_index} < 30: Get all countries that are either in North- or South America and have a human development index of smaller than 30',
-            html.Br(),
-            "mean{New_cases} >= 300 and max{New_deaths} < 100: Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths should be below 100",
-            html.Br(),
-            "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}: Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)",
+            description1,
+            description2,
+            description3,
+            description4,
+            description5,
         ]
 
 
@@ -490,7 +521,7 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column, plot_type):
         return json.dumps(
             {
                 "Date": hoverData["points"][0]["x"],
-                "New cases": hoverData["points"][0]["y"],
+                "New cases": round(hoverData["points"][0]["y"]),
             },
             indent=2,
         )
@@ -498,7 +529,9 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column, plot_type):
         return json.dumps(
             {
                 xaxis_column: hoverData["points"][0]["x"],
-                "y": hoverData["points"][0]["y"],
+                yaxis_column[0]
+                if len(yaxis_column) == 1
+                else "y": hoverData["points"][0]["y"],
             },
             indent=2,
         )
@@ -511,14 +544,16 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column, plot_type):
     Input("yaxis-column", "value"),
     Input("plot_type", "value"),
 )
-def display_click_data(clickData, xaxis_column, yaxis_column, plot_type):
+def display_click_data(
+    clickData, xaxis_column, yaxis_column, plot_type,
+):
     if clickData is None:
         return json.dumps(clickData, indent=2)
     elif plot_type == "Predict":
         return json.dumps(
             {
                 "Date": clickData["points"][0]["x"],
-                "New_cases": clickData["points"][0]["y"],
+                "New_cases": round(clickData["points"][0]["y"]),
             },
             indent=2,
         )
@@ -526,7 +561,9 @@ def display_click_data(clickData, xaxis_column, yaxis_column, plot_type):
         return json.dumps(
             {
                 xaxis_column: clickData["points"][0]["x"],
-                "y": clickData["points"][0]["y"],
+                yaxis_column[0]
+                if len(yaxis_column) == 1
+                else "y": clickData["points"][0]["y"],
             },
             indent=2,
         )
@@ -585,8 +622,9 @@ def update_graph(
     # filter data according to daterange and filter query
     df_ = df.copy()
     date_range = sorted(df_["Date"].unique())
-    min_date, max_date = pd.to_datetime(date_range[date_slider[0]]), pd.to_datetime(
-        date_range[date_slider[1]]
+    min_date, max_date = (
+        pd.to_datetime(date_range[date_slider[0]]),
+        pd.to_datetime(date_range[date_slider[1]]),
     )
     df_ = df_[(df_["Date"] >= min_date) & (df_["Date"] <= max_date)]
 
@@ -611,8 +649,7 @@ def update_graph(
             y_radio_options,
             yaxis_type,
             "{} - {}".format(
-                min_date.strftime("%d %b %Y"),
-                max_date.strftime("%d %b %Y"),
+                min_date.strftime("%d %b %Y"), max_date.strftime("%d %b %Y"),
             ),
         )
 
@@ -728,21 +765,12 @@ def update_graph(
                 # marker_color=(df_[grouping] if grouping != None else None),
             elif plot_type == "Bar":
                 fig.add_trace(
-                    go.Bar(
-                        x=xaxis_data,
-                        y=cur_data,
-                        name=str(yaxis),
-                        offsetgroup=i,
-                    ),
+                    go.Bar(x=xaxis_data, y=cur_data, name=str(yaxis), offsetgroup=i,),
                     secondary_y=add_to_secondary,
                 )
             elif plot_type == "Line":
                 fig.add_trace(
-                    go.Line(
-                        x=xaxis_data,
-                        y=df_[yaxis],
-                        name=str(yaxis),
-                    ),
+                    go.Line(x=xaxis_data, y=df_[yaxis], name=str(yaxis),),
                     secondary_y=add_to_secondary,
                 )
 
@@ -842,10 +870,7 @@ def update_graph(
         xaxis_type,
         y_radio_options,
         yaxis_type,
-        "{} - {}".format(
-            min_date.strftime("%d %b %Y"),
-            max_date.strftime("%d %b %Y"),
-        ),
+        "{} - {}".format(min_date.strftime("%d %b %Y"), max_date.strftime("%d %b %Y"),),
     )
 
 
