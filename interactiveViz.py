@@ -180,7 +180,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "15%",
+                        "width": "13%",
                         "float": "left",
                     },
                 ),
@@ -189,14 +189,14 @@ app.layout = html.Div(
                     options=[
                         {"label": label, "value": value}
                         for label, value in zip(
-                            ["Linear Scale", "Logarithmic Scale"], ["Linear", "Log"]
+                            ["Linear", "Logarithmic"], ["Linear", "Log"]
                         )
                     ],
                     value="Linear",
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "10.5%",
+                        "width": "11.5%",
                         "float": "left",
                     },
                     style={"color": colors["buttonColor"]},
@@ -215,7 +215,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "5%",
+                        "width": "4%",
                         "float": "left",
                     },
                 ),
@@ -224,14 +224,14 @@ app.layout = html.Div(
                     options=[
                         {"label": label, "value": value}
                         for label, value in zip(
-                            ["Logarithmic Scale", "Linear Scale"], ["Log", "Linear"]
+                            ["Logarithmic", "Linear"], ["Log", "Linear"]
                         )
                     ],
                     value="Linear",
                     labelStyle={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "9.5%",
+                        "width": "10.5%",
                         "float": "right",
                     },
                     style={"color": colors["buttonColor"]},
@@ -340,8 +340,9 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "13%",
+                        "width": "20%",
                         "float": "right",
+                        "textAlign": "right",
                     },
                 ),
             ],
@@ -545,15 +546,11 @@ def update_graph(
 ):
     x_radio_options = [
         {"label": label, "value": value}
-        for label, value in zip(
-            ["Linear Scale", "Logarithmic Scale"], ["Linear", "Log"]
-        )
+        for label, value in zip(["Linear", "Logarithmic"], ["Linear", "Log"])
     ]
     y_radio_options = [
         {"label": label, "value": value}
-        for label, value in zip(
-            ["Logarithmic Scale", "Linear Scale"], ["Log", "Linear"]
-        )
+        for label, value in zip(["Logarithmic", "Linear"], ["Log", "Linear"])
     ]
     # check if xaxis_colum in non-numerical, if yes disable log selection
     if xaxis_column_name != None and not is_numeric_dtype(df[xaxis_column_name]):
