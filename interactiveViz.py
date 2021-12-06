@@ -11,13 +11,23 @@ from dash.dependencies import Input, Output
 import json
 import numpy as np
 import filter_dash
-import datetime
-from dash.exceptions import PreventUpdate
 
 from data_processing import getData
 from predict import Model
 
 app = dash.Dash(__name__)
+
+plot_colors = np.array(px.colors.qualitative.Plotly)
+symbols = ["circle", "star", "cross", "triangle-up", "bowtie", "diamond-cross"]
+patterns = ["", ".", "x", "+", "/", "\\"]
+line_styles = [
+    "solid",
+    "dot",
+    "dash",
+    "longdash",
+    "dashdot",
+    "longdashdot",
+]
 
 colors = {
     "bg": "#282b38",
@@ -708,17 +718,17 @@ def update_graph(
     if grouping != None:
         df_ = (
             df_[set(cols + [xaxis_column_name, grouping, "Population"])]
-            .groupby(xaxis_column_name)
-            .apply(lambda x: x.groupby(grouping).sum())
+            .groupby([xaxis_column_name, grouping])
+            .sum()
         )
-        df_.reset_index(inplace=True)
     else:
         df_ = (
             df_[set(cols + [xaxis_column_name, "Population"])]
-            .groupby(xaxis_column_name)
+            .groupby(xaxis_column_name, as_index=False)
             .sum()
         )
-        df_.reset_index(inplace=True)
+
+    df_.reset_index(inplace=True)
 
     if cols_to_mean_up_present != []:
         df_[cols_to_mean_up_present] = (
@@ -742,7 +752,10 @@ def update_graph(
             df_[yaxis_column_name[0]].max(),
             df_[yaxis_column_name[1]].max(),
         )
-        symbols = SymbolValidator().values
+        if grouping != None:
+            color_groups = df_[grouping].unique()
+            color_mapping = dict(zip(color_groups, np.arange(len(color_groups))))
+            group_data = np.array([color_mapping[elem] for elem in df_[grouping]])
         # markers https://plotly.com/python/marker-style/
         for i, yaxis in enumerate(yaxis_column_name):
             cur_data = df_[yaxis]
@@ -773,17 +786,31 @@ def update_graph(
 
             # Add traces
             if plot_type == "Scatter":
-                fig.add_trace(
-                    go.Scatter(
-                        x=xaxis_data,
-                        y=cur_data,
-                        name=str(yaxis),
-                        mode="markers",
-                        marker_symbol=symbols[i],
-                    ),
-                    secondary_y=add_to_secondary,
-                )
-                # marker_color=(df_[grouping] if grouping != None else None),
+                if grouping != None:
+                    for j, group in enumerate(color_groups):
+                        data = df_[df_[grouping] == group]
+                        fig.add_trace(
+                            go.Scatter(
+                                x=data[xaxis_column_name],
+                                y=data[yaxis],
+                                name="{}_{}".format(yaxis, group),
+                                mode="markers",
+                                marker_symbol=symbols[i],
+                                marker_color=plot_colors[j],
+                            ),
+                            secondary_y=add_to_secondary,
+                        )
+                else:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=xaxis_data,
+                            y=df_[yaxis],
+                            name=str(yaxis),
+                            mode="markers",
+                            marker_symbol=symbols[i],
+                        ),
+                        secondary_y=add_to_secondary,
+                    )
             elif plot_type == "Bar":
                 fig.add_trace(
                     go.Bar(
@@ -791,18 +818,50 @@ def update_graph(
                         y=cur_data,
                         name=str(yaxis),
                         offsetgroup=i,
+                        marker_pattern_shape=patterns[i],
+                        marker_color=plot_colors[group_data]
+                        if grouping != None
+                        else None,
+                        showlegend=grouping == None,
                     ),
                     secondary_y=add_to_secondary,
                 )
+                if grouping != None:
+                    for j, group in enumerate(color_groups):
+                        fig.add_trace(
+                            go.Bar(
+                                x=[None],
+                                y=[None],
+                                name="{}_{}".format(yaxis, group),
+                                marker_pattern_shape=patterns[i],
+                                marker_color=plot_colors[j],
+                                showlegend=True,
+                            )
+                        )
             elif plot_type == "Line":
-                fig.add_trace(
-                    go.Line(
-                        x=xaxis_data,
-                        y=df_[yaxis],
-                        name=str(yaxis),
-                    ),
-                    secondary_y=add_to_secondary,
-                )
+                if grouping != None:
+                    for j, group in enumerate(color_groups):
+                        data = df_[df_[grouping] == group]
+                        fig.add_trace(
+                            go.Scatter(
+                                x=data[xaxis_column_name],
+                                y=data[yaxis],
+                                name="{}_{}".format(yaxis, group),
+                                line=dict(dash=line_styles[i]),
+                                marker_color=plot_colors[j],
+                            ),
+                            secondary_y=add_to_secondary,
+                        )
+                else:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=xaxis_data,
+                            y=df_[yaxis],
+                            name=str(yaxis),
+                            line=dict(dash=line_styles[i]),
+                        ),
+                        secondary_y=add_to_secondary,
+                    )
 
         # Set x-axis title
         if xaxis_type == "Log":
@@ -835,7 +894,7 @@ def update_graph(
                 y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(grouping if grouping != None else None),
+                color=grouping,
             )
         elif plot_type == "Bar":
             fig = px.bar(
@@ -844,7 +903,7 @@ def update_graph(
                 y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(grouping if grouping != None else None),
+                color=grouping,
             )
         elif plot_type == "Line":
             fig = px.line(
@@ -853,11 +912,8 @@ def update_graph(
                 y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(grouping if grouping != None else None),
+                color=grouping,
             )
-            # if grouping == None:
-            #     fig.update_layout(showlegend=False)
-            #     fig.update_traces(line_color="#636EFA")
         elif plot_type == "Predict":
             fig = go.Figure()
 

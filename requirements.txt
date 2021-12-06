@@ -28,12 +28,12 @@ done - align selection boxes
 done - increase font size of title, update secondary title
 not done - add information box on the bottom, giving info about: column descriptions, if user hovers over datapoint give information about it (e.g. max(new_cases), mean, date, country in general, choose color for one specific country, change color for all other countries, information about the choosen columns)
 done - think about design of page
-not done - fix coloring for multiple y-parameters?
+done - fix coloring for multiple y-parameters?
 done - add columns divided by population
 done - link filter query examples in visualization tool
 done - fix color for selection boxes (when item is selected)
-not done - fix size of multi selection box (you can fix it by changing font size, but not sure if that is better)
-done - should data of groups be aggregated with mean/sum, depending on the column? if no groupby is selected just group for date
+done - fix size of multi selection box (you can fix it by changing font size, but not sure if that is better), should be good like this
+done - should data of groups be aggregated with mean/sum, depending on the column? if no groupby is selected just group for xaxis
 
 not done - after all of this, think about more plot types to add (earth map)
 not done - maybe add second plot to compare countries? 
