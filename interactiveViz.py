@@ -29,13 +29,14 @@ colors = {
 df = getData()
 
 df = df.rename(columns={elem: elem[0].upper() + elem[1:] for elem in df.columns})
+df = df.rename(columns={"ConfirmedDeaths": "Total_deaths"})
 df = df.sort_index(axis=1)
 
 model = Model(df)
 
 # add columns divided by population
 cols_to_divide_by_population = [
-    "ConfirmedDeaths",
+    "Total_deaths",
     "New_cases",
     "New_deaths",
     "New_tests",
