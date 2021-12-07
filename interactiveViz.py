@@ -38,7 +38,9 @@ colors = {
 
 df = getData()
 
-df_column_desc = pd.read_csv("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-codebook.csv")
+df_column_desc = pd.read_csv(
+    "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-codebook.csv"
+)
 
 df = df.rename(columns={elem: elem[0].upper() + elem[1:] for elem in df.columns})
 df = df.sort_index(axis=1)
@@ -78,6 +80,10 @@ cols_to_mean_up = list(
         cols_to_sum_up + cols_to_sum_up_with_population + cols_to_ignore
     )
 )
+
+y_axis_dropdown_options = [
+    {"label": elem, "value": elem} for elem in df.columns if not elem in cols_to_ignore
+] + [{"label": "Population", "value": "Population"}]
 
 # load only some of the data for faster updating
 # df = pd.DataFrame(
@@ -280,12 +286,7 @@ app.layout = html.Div(
                         dcc.Dropdown(
                             id="yaxis-column",
                             placeholder="Choose which column to visualize for y-axis",
-                            options=[
-                                {"label": elem, "value": elem}
-                                for elem in df.columns
-                                if not elem in cols_to_ignore
-                            ]
-                            + [{"label": "Population", "value": "Population"}],
+                            options=y_axis_dropdown_options,
                             style={
                                 "color": colors["text"],
                                 "backgroundColor": colors["bg_bright"],
@@ -408,7 +409,11 @@ app.layout = html.Div(
                     placeholder="Show additional information",
                     options=[
                         {"label": elem, "value": elem}
-                        for elem in ["Hover/click information", "Filter query examples", "Column description"]
+                        for elem in [
+                            "Hover/click information",
+                            "Filter query examples",
+                            "Column description",
+                        ]
                     ],
                     style={
                         "color": colors["text"],
@@ -440,7 +445,7 @@ app.layout = html.Div(
                             id="hover-data",
                             style={
                                 # "border": "thin lightgrey solid",
-                                #"overflowX": "scroll",
+                                # "overflowX": "scroll",
                             },
                         ),
                     ],
@@ -462,7 +467,7 @@ app.layout = html.Div(
                             id="click-data",
                             style={
                                 # "border": "thin lightgrey solid",
-                                #"overflowX": "scroll",
+                                # "overflowX": "scroll",
                             },
                         ),
                     ],
@@ -473,11 +478,11 @@ app.layout = html.Div(
                         "color": colors["text"],
                     },
                 ),
-            ]
+            ],
         ),
         html.Div(
             id="filter_examples",
-            children = [
+            children=[
                 html.P(
                     children=[
                         html.Span("1. "),
@@ -489,7 +494,9 @@ app.layout = html.Div(
                 html.P(
                     children=[
                         html.Span("2. "),
-                        html.Strong('{Continent} = "Europe" or {Population} >= 10000000'),
+                        html.Strong(
+                            '{Continent} = "Europe" or {Population} >= 10000000'
+                        ),
                         html.Br(),
                         html.Span(
                             "Get all countries that are either in Europe or have a population of 10000000 or bigger"
@@ -531,7 +538,6 @@ app.layout = html.Div(
                     ]
                 ),
             ],
-            
             style={
                 "color": colors["text"],
                 "fontSize": 14,
@@ -541,10 +547,7 @@ app.layout = html.Div(
         ),
         html.Div(
             id="column",
-            children = [
-                
-            ],
-            
+            children=[],
             style={
                 "color": colors["text"],
                 "fontSize": 14,
@@ -554,6 +557,22 @@ app.layout = html.Div(
         ),
     ],
 )
+
+# limit number of columns one can select for y-axis, from: https://community.plotly.com/t/limit-number-of-values-in-multi-select-dropdown-without-disabling/42020/7
+@app.callback(
+    Output(component_id="yaxis-column", component_property="options"),
+    [
+        Input(component_id="yaxis-column", component_property="value"),
+    ],
+)
+def update_dropdown_options(values):
+    if values != None and len(values) == 6:
+        return [
+            option for option in y_axis_dropdown_options if option["value"] in values
+        ]
+    else:
+        return y_axis_dropdown_options
+
 
 @app.callback(
     Output(component_id="column", component_property="children"),
@@ -566,19 +585,28 @@ def show_column_desc(xaxis, yaxis):
         xaxis_descs = df_column_desc[df_column_desc["column"] == xaxis.lower()]
         if len(xaxis_descs) != 0:
             total_descs.append((xaxis, xaxis_descs.iloc[0]["description"]))
-        else: 
-            total_descs.append((xaxis, "No description"))
-    
+        else:
+            total_descs.append(
+                (
+                    xaxis,
+                    "descriptions can be found here: https://github.com/OxCGRT/covid-policy-tracker/blob/master/documentation/interpretation_guide.md",
+                )
+            )
+
     if yaxis != None:
         for yaxis_el in yaxis:
             yaxis_descs = df_column_desc[df_column_desc["column"] == yaxis_el.lower()]
             if len(yaxis_descs) != 0:
                 total_descs.append((yaxis_el, yaxis_descs.iloc[0]["description"]))
-            else: 
-                total_descs.append((yaxis_el, "No description"))
-    
-    return [html.Div(children = column + ": " + desc) for column, desc in total_descs]
+            else:
+                total_descs.append(
+                    (
+                        yaxis_el,
+                        "descriptions can be found here: https://github.com/OxCGRT/covid-policy-tracker/blob/master/documentation/interpretation_guide.md",
+                    )
+                )
 
+    return [html.Div(children=column + ": " + desc) for column, desc in total_descs]
 
 
 @app.callback(
@@ -593,6 +621,7 @@ def update_information(value):
     filter_examples_vis = value != "Filter query examples"
 
     return column_desc_vis, hover_info_vis, filter_examples_vis
+
 
 @app.callback(
     Output("hover-data", "children"),
@@ -667,6 +696,8 @@ def display_click_data(
         Output("yaxis-type", "options"),
         Output("yaxis-type", "value"),
         Output("date-range-container", "children"),
+        Output("grouping", "options"),
+        Output("grouping", "value"),
     ],
     [
         Input("xaxis-column", "value"),
@@ -742,6 +773,12 @@ def update_graph(
                 min_date.strftime("%d %b %Y"),
                 max_date.strftime("%d %b %Y"),
             ),
+            [
+                {"label": elem, "value": elem}
+                for elem in df_.columns
+                if len(df_[elem].unique()) <= 10
+            ],
+            grouping,
         )
 
     if not (
@@ -754,6 +791,15 @@ def update_graph(
 
     if country != None and country != []:
         df_ = df_[df_["Location"].isin(country)]
+
+    # update color by options, such that only columns that have less than unique values are allowed
+    color_by_options = [
+        {"label": elem, "value": elem}
+        for elem in df_.columns
+        if len(df_[elem].unique()) <= 10
+    ]
+    if not any([grouping == elem["label"] for elem in color_by_options]):
+        grouping = None
 
     if plot_type != "Predict":
         # aggregate data according to xaxis and the color-by (if given)
@@ -1019,6 +1065,8 @@ def update_graph(
             min_date.strftime("%d %b %Y"),
             max_date.strftime("%d %b %Y"),
         ),
+        color_by_options,
+        grouping,
     )
 
 
