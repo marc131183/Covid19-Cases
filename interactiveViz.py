@@ -12,6 +12,7 @@ import json
 import numpy as np
 import filter_dash
 
+# import required data from other files
 from data_processing import getData
 from predict import Model
 
@@ -36,16 +37,20 @@ colors = {
     "buttonColor": "#4fc6e9",
 }
 
+# retrieve the processed data
 df = getData()
 
+# add description file for columns
 df_column_desc = pd.read_csv(
     "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-codebook.csv"
 )
 
+# rename and sort the columns alfabetically in the dataset
 df = df.rename(columns={elem: elem[0].upper() + elem[1:] for elem in df.columns})
 df = df.rename(columns={"ConfirmedDeaths": "Total_deaths"})
 df = df.sort_index(axis=1)
 
+# retrieve the data for prediction visualization
 model = Model(df)
 
 # add columns divided by population
@@ -90,6 +95,7 @@ y_axis_dropdown_options = [
 # df = pd.DataFrame(
 #    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
 # )
+
 
 app.layout = html.Div(
     style={"backgroundColor": colors["bg"]},
@@ -162,10 +168,7 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={
-                        "width": "20%",
-                        "float": "left",
-                    },
+                    style={"width": "20%", "float": "left",},
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 dcc.Input(
@@ -198,10 +201,7 @@ app.layout = html.Div(
                             },
                         )
                     ],
-                    style={
-                        "width": "20%",
-                        "float": "right",
-                    },
+                    style={"width": "20%", "float": "right",},
                 ),
             ],
             style={"height": "30px"},
@@ -298,10 +298,7 @@ app.layout = html.Div(
                             multi=True,
                         ),
                     ],
-                    style={
-                        "width": "34%",
-                        "float": "left",
-                    },
+                    style={"width": "34%", "float": "left",},
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -323,10 +320,7 @@ app.layout = html.Div(
                             multi=True,
                         ),
                     ],
-                    style={
-                        "width": "34%",
-                        "float": "left",
-                    },
+                    style={"width": "34%", "float": "left",},
                 ),
                 html.Div(style={"width": "2%", "height": "1px", "float": "left"}),
                 html.Div(
@@ -346,10 +340,7 @@ app.layout = html.Div(
                             },
                         ),
                     ],
-                    style={
-                        "width": "28%",
-                        "float": "right",
-                    },
+                    style={"width": "28%", "float": "right",},
                 ),
             ],
             style={"height": "30px"},
@@ -425,10 +416,7 @@ app.layout = html.Div(
                     },
                 ),
             ],
-            style={
-                "width": "20%",
-                "float": "left",
-            },
+            style={"width": "20%", "float": "left",},
         ),
         html.Div(style={"width": "10%", "height": "1px", "float": "left"}),
         html.Div(
@@ -442,13 +430,7 @@ app.layout = html.Div(
                     Mouse over values in the graph
                 """
                         ),
-                        html.Pre(
-                            id="hover-data",
-                            style={
-                                # "border": "thin lightgrey solid",
-                                # "overflowX": "scroll",
-                            },
-                        ),
+                        html.Pre(id="hover-data",),
                     ],
                     className="three columns",
                     style={
@@ -464,13 +446,7 @@ app.layout = html.Div(
                     Click on points in the graph
                 """
                         ),
-                        html.Pre(
-                            id="click-data",
-                            style={
-                                # "border": "thin lightgrey solid",
-                                # "overflowX": "scroll",
-                            },
-                        ),
+                        html.Pre(id="click-data",),
                     ],
                     className="three columns",
                     style={
@@ -562,9 +538,7 @@ app.layout = html.Div(
 # limit number of columns one can select for y-axis, from: https://community.plotly.com/t/limit-number-of-values-in-multi-select-dropdown-without-disabling/42020/7
 @app.callback(
     Output(component_id="yaxis-column", component_property="options"),
-    [
-        Input(component_id="yaxis-column", component_property="value"),
-    ],
+    [Input(component_id="yaxis-column", component_property="value"),],
 )
 def update_dropdown_options(values):
     if values != None and len(values) == 6:
@@ -575,6 +549,7 @@ def update_dropdown_options(values):
         return y_axis_dropdown_options
 
 
+# show the column descriptions when columns are chosen
 @app.callback(
     Output(component_id="column", component_property="children"),
     Input(component_id="xaxis-column", component_property="value"),
@@ -610,6 +585,7 @@ def show_column_desc(xaxis, yaxis):
     return [html.Div(children=column + ": " + desc) for column, desc in total_descs]
 
 
+# add additional information for the visualization tool
 @app.callback(
     Output(component_id="column", component_property="hidden"),
     Output(component_id="hover_click", component_property="hidden"),
@@ -624,6 +600,7 @@ def update_information(value):
     return column_desc_vis, hover_info_vis, filter_examples_vis
 
 
+# display information when hovering datapoints
 @app.callback(
     Output("hover-data", "children"),
     Input("indicator-graphic", "hoverData"),
@@ -654,6 +631,7 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column, plot_type):
         )
 
 
+# display information when clicking datapoints
 @app.callback(
     Output("click-data", "children"),
     Input("indicator-graphic", "clickData"),
@@ -662,10 +640,7 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column, plot_type):
     Input("plot_type", "value"),
 )
 def display_click_data(
-    clickData,
-    xaxis_column,
-    yaxis_column,
-    plot_type,
+    clickData, xaxis_column, yaxis_column, plot_type,
 ):
     if clickData is None:
         return json.dumps(clickData, indent=2)
@@ -771,8 +746,7 @@ def update_graph(
             y_radio_options,
             yaxis_type,
             "{} - {}".format(
-                min_date.strftime("%d %b %Y"),
-                max_date.strftime("%d %b %Y"),
+                min_date.strftime("%d %b %Y"), max_date.strftime("%d %b %Y"),
             ),
             [
                 {"label": elem, "value": elem}
@@ -993,7 +967,7 @@ def update_graph(
             row=1,
         )
     else:
-        if plot_type == "Scatter":  # remember: only make some parameters available?
+        if plot_type == "Scatter":
             fig = px.scatter(
                 df_,
                 x=xaxis_column_name,
@@ -1062,10 +1036,7 @@ def update_graph(
         xaxis_type,
         y_radio_options,
         yaxis_type,
-        "{} - {}".format(
-            min_date.strftime("%d %b %Y"),
-            max_date.strftime("%d %b %Y"),
-        ),
+        "{} - {}".format(min_date.strftime("%d %b %Y"), max_date.strftime("%d %b %Y"),),
         color_by_options,
         grouping,
     )
