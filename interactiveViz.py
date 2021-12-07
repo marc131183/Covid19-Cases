@@ -38,6 +38,8 @@ colors = {
 
 df = getData()
 
+df_column_desc = pd.read_csv("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-codebook.csv")
+
 df = df.rename(columns={elem: elem[0].upper() + elem[1:] for elem in df.columns})
 df = df.sort_index(axis=1)
 
@@ -400,6 +402,31 @@ app.layout = html.Div(
         html.Div(className="row", style={"height": "15px"}),
         dcc.Graph(id="indicator-graphic"),
         html.Div(
+            children=[
+                dcc.Dropdown(
+                    id="additional_information",
+                    placeholder="Show additional information",
+                    options=[
+                        {"label": elem, "value": elem}
+                        for elem in ["Hover/click information", "Filter query examples", "Column description"]
+                    ],
+                    style={
+                        "color": colors["text"],
+                        "backgroundColor": colors["bg_bright"],
+                        "fontSize": 25,
+                        "border-color": "#ffffff",
+                        "border-radius": 5,
+                    },
+                ),
+            ],
+            style={
+                "width": "20%",
+                "float": "left",
+            },
+        ),
+        html.Div(style={"width": "10%", "height": "1px", "float": "left"}),
+        html.Div(
+            id="hover_click",
             className="row",
             children=[
                 html.Div(
@@ -413,7 +440,7 @@ app.layout = html.Div(
                             id="hover-data",
                             style={
                                 # "border": "thin lightgrey solid",
-                                "overflowX": "scroll",
+                                #"overflowX": "scroll",
                             },
                         ),
                     ],
@@ -435,7 +462,7 @@ app.layout = html.Div(
                             id="click-data",
                             style={
                                 # "border": "thin lightgrey solid",
-                                "overflowX": "scroll",
+                                #"overflowX": "scroll",
                             },
                         ),
                     ],
@@ -446,95 +473,126 @@ app.layout = html.Div(
                         "color": colors["text"],
                     },
                 ),
-                html.Div(
-                    [
-                        html.Button(
-                            "Click here to see filter query examples", id="show-secret"
+            ]
+        ),
+        html.Div(
+            id="filter_examples",
+            children = [
+                html.P(
+                    children=[
+                        html.Span("1. "),
+                        html.Strong('{Continent} = "Asia"'),
+                        html.Br(),
+                        html.Span("Get all countries that are in Asia"),
+                    ]
+                ),
+                html.P(
+                    children=[
+                        html.Span("2. "),
+                        html.Strong('{Continent} = "Europe" or {Population} >= 10000000'),
+                        html.Br(),
+                        html.Span(
+                            "Get all countries that are either in Europe or have a population of 10000000 or bigger"
                         ),
-                        html.Div(id="body-div"),
-                    ],
-                    style={
-                        "color": colors["text"],
-                        "fontSize": 14,
-                        "width": "50%",
-                        "display": "inline-block",
-                        "float": "right",
-                    },
+                    ]
+                ),
+                html.P(
+                    children=[
+                        html.Span("3. "),
+                        html.Strong(
+                            '({Continent} = "North America" or {Continent} = "South America") and {Human_development_index} < 30'
+                        ),
+                        html.Br(),
+                        html.Span(
+                            "Get all countries that are either in North- or South America and have a human development index of smaller than 30"
+                        ),
+                    ]
+                ),
+                html.P(
+                    children=[
+                        html.Span("4. "),
+                        html.Strong("mean{New_cases} >= 300 and max{New_deaths} < 100"),
+                        html.Br(),
+                        html.Span(
+                            "Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths below 100"
+                        ),
+                    ]
+                ),
+                html.P(
+                    children=[
+                        html.Span("5. "),
+                        html.Strong(
+                            "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}"
+                        ),
+                        html.Br(),
+                        html.Span(
+                            "Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)"
+                        ),
+                    ]
                 ),
             ],
+            
+            style={
+                "color": colors["text"],
+                "fontSize": 14,
+                "width": "50%",
+                "float": "left",
+            },
+        ),
+        html.Div(
+            id="column",
+            children = [
+                
+            ],
+            
+            style={
+                "color": colors["text"],
+                "fontSize": 14,
+                "width": "50%",
+                "float": "left",
+            },
         ),
     ],
 )
 
+@app.callback(
+    Output(component_id="column", component_property="children"),
+    Input(component_id="xaxis-column", component_property="value"),
+    Input(component_id="yaxis-column", component_property="value"),
+)
+def show_column_desc(xaxis, yaxis):
+    total_descs = []
+    if xaxis != None:
+        xaxis_descs = df_column_desc[df_column_desc["column"] == xaxis.lower()]
+        if len(xaxis_descs) != 0:
+            total_descs.append((xaxis, xaxis_descs.iloc[0]["description"]))
+        else: 
+            total_descs.append((xaxis, "No description"))
+    
+    if yaxis != None:
+        for yaxis_el in yaxis:
+            yaxis_descs = df_column_desc[df_column_desc["column"] == yaxis_el.lower()]
+            if len(yaxis_descs) != 0:
+                total_descs.append((yaxis_el, yaxis_descs.iloc[0]["description"]))
+            else: 
+                total_descs.append((yaxis_el, "No description"))
+    
+    return [html.Div(children = column + ": " + desc) for column, desc in total_descs]
+
+
 
 @app.callback(
-    Output(component_id="body-div", component_property="children"),
-    Input(component_id="show-secret", component_property="n_clicks"),
+    Output(component_id="column", component_property="hidden"),
+    Output(component_id="hover_click", component_property="hidden"),
+    Output(component_id="filter_examples", component_property="hidden"),
+    Input(component_id="additional_information", component_property="value"),
 )
-def update_output(n_clicks):
-    if n_clicks is None or (n_clicks % 2 == 0):
-        return {}
-    else:
-        description1 = html.P(
-            children=[
-                html.Span("1. "),
-                html.Strong('{Continent} = "Asia"'),
-                html.Br(),
-                html.Span("Get all countries that are in Asia"),
-            ]
-        )
-        description2 = html.P(
-            children=[
-                html.Span("2. "),
-                html.Strong('{Continent} = "Europe" or {Population} >= 10000000'),
-                html.Br(),
-                html.Span(
-                    "Get all countries that are either in Europe or have a population of 10000000 or bigger"
-                ),
-            ]
-        )
-        description3 = html.P(
-            children=[
-                html.Span("3. "),
-                html.Strong(
-                    '({Continent} = "North America" or {Continent} = "South America") and {Human_development_index} < 30'
-                ),
-                html.Br(),
-                html.Span(
-                    "Get all countries that are either in North- or South America and have a human development index of smaller than 30"
-                ),
-            ]
-        )
-        description4 = html.P(
-            children=[
-                html.Span("4. "),
-                html.Strong("mean{New_cases} >= 300 and max{New_deaths} < 100"),
-                html.Br(),
-                html.Span(
-                    "Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths below 100"
-                ),
-            ]
-        )
-        description5 = html.P(
-            children=[
-                html.Span("5. "),
-                html.Strong(
-                    "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}"
-                ),
-                html.Br(),
-                html.Span(
-                    "Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)"
-                ),
-            ]
-        )
-        return [
-            description1,
-            description2,
-            description3,
-            description4,
-            description5,
-        ]
+def update_information(value):
+    column_desc_vis = value != "Column description"
+    hover_info_vis = value != "Hover/click information"
+    filter_examples_vis = value != "Filter query examples"
 
+    return column_desc_vis, hover_info_vis, filter_examples_vis
 
 @app.callback(
     Output("hover-data", "children"),
