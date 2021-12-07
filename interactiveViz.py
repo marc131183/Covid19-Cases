@@ -11,13 +11,23 @@ from dash.dependencies import Input, Output
 import json
 import numpy as np
 import filter_dash
-import datetime
-from dash.exceptions import PreventUpdate
 
 from data_processing import getData
 from predict import Model
 
 app = dash.Dash(__name__)
+
+plot_colors = np.array(px.colors.qualitative.Plotly)
+symbols = ["circle", "star", "cross", "triangle-up", "bowtie", "diamond-cross"]
+patterns = ["", ".", "x", "+", "/", "\\"]
+line_styles = [
+    "solid",
+    "dot",
+    "dash",
+    "longdash",
+    "dashdot",
+    "longdashdot",
+]
 
 colors = {
     "bg": "#282b38",
@@ -27,6 +37,10 @@ colors = {
 }
 
 df = getData()
+
+df_column_desc = pd.read_csv(
+    "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-codebook.csv"
+)
 
 df = df.rename(columns={elem: elem[0].upper() + elem[1:] for elem in df.columns})
 df = df.rename(columns={"ConfirmedDeaths": "Total_deaths"})
@@ -67,6 +81,10 @@ cols_to_mean_up = list(
         cols_to_sum_up + cols_to_sum_up_with_population + cols_to_ignore
     )
 )
+
+y_axis_dropdown_options = [
+    {"label": elem, "value": elem} for elem in df.columns if not elem in cols_to_ignore
+] + [{"label": "Population", "value": "Population"}]
 
 # load only some of the data for faster updating
 # df = pd.DataFrame(
@@ -269,12 +287,7 @@ app.layout = html.Div(
                         dcc.Dropdown(
                             id="yaxis-column",
                             placeholder="Choose which column to visualize for y-axis",
-                            options=[
-                                {"label": elem, "value": elem}
-                                for elem in df.columns
-                                if not elem in cols_to_ignore
-                            ]
-                            + [{"label": "Population", "value": "Population"}],
+                            options=y_axis_dropdown_options,
                             style={
                                 "color": colors["text"],
                                 "backgroundColor": colors["bg_bright"],
@@ -351,7 +364,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "14%",
+                        "width": "25%",
                         "float": "left",
                     },
                 ),
@@ -365,7 +378,7 @@ app.layout = html.Div(
                     style={
                         "color": colors["text"],
                         "fontSize": 20,
-                        "width": "14%",
+                        "width": "25%",
                         "float": "right",
                         "textAlign": "right",
                     },
@@ -391,6 +404,35 @@ app.layout = html.Div(
         html.Div(className="row", style={"height": "15px"}),
         dcc.Graph(id="indicator-graphic"),
         html.Div(
+            children=[
+                dcc.Dropdown(
+                    id="additional_information",
+                    placeholder="Show additional information",
+                    options=[
+                        {"label": elem, "value": elem}
+                        for elem in [
+                            "Hover/click information",
+                            "Filter query examples",
+                            "Column description",
+                        ]
+                    ],
+                    style={
+                        "color": colors["text"],
+                        "backgroundColor": colors["bg_bright"],
+                        "fontSize": 25,
+                        "border-color": "#ffffff",
+                        "border-radius": 5,
+                    },
+                ),
+            ],
+            style={
+                "width": "20%",
+                "float": "left",
+            },
+        ),
+        html.Div(style={"width": "10%", "height": "1px", "float": "left"}),
+        html.Div(
+            id="hover_click",
             className="row",
             children=[
                 html.Div(
@@ -404,7 +446,7 @@ app.layout = html.Div(
                             id="hover-data",
                             style={
                                 # "border": "thin lightgrey solid",
-                                "overflowX": "scroll",
+                                # "overflowX": "scroll",
                             },
                         ),
                     ],
@@ -426,7 +468,7 @@ app.layout = html.Div(
                             id="click-data",
                             style={
                                 # "border": "thin lightgrey solid",
-                                "overflowX": "scroll",
+                                # "overflowX": "scroll",
                             },
                         ),
                     ],
@@ -437,94 +479,149 @@ app.layout = html.Div(
                         "color": colors["text"],
                     },
                 ),
-                html.Div(
-                    [
-                        html.Button(
-                            "Click here to see filter query examples", id="show-secret"
+            ],
+        ),
+        html.Div(
+            id="filter_examples",
+            children=[
+                html.P(
+                    children=[
+                        html.Span("1. "),
+                        html.Strong('{Continent} = "Asia"'),
+                        html.Br(),
+                        html.Span("Get all countries that are in Asia"),
+                    ]
+                ),
+                html.P(
+                    children=[
+                        html.Span("2. "),
+                        html.Strong(
+                            '{Continent} = "Europe" or {Population} >= 10000000'
                         ),
-                        html.Div(id="body-div"),
-                    ],
-                    style={
-                        "color": colors["text"],
-                        "fontSize": 14,
-                        "width": "50%",
-                        "display": "inline-block",
-                        "float": "right",
-                    },
+                        html.Br(),
+                        html.Span(
+                            "Get all countries that are either in Europe or have a population of 10000000 or bigger"
+                        ),
+                    ]
+                ),
+                html.P(
+                    children=[
+                        html.Span("3. "),
+                        html.Strong(
+                            '({Continent} = "North America" or {Continent} = "South America") and {Human_development_index} < 30'
+                        ),
+                        html.Br(),
+                        html.Span(
+                            "Get all countries that are either in North- or South America and have a human development index of smaller than 30"
+                        ),
+                    ]
+                ),
+                html.P(
+                    children=[
+                        html.Span("4. "),
+                        html.Strong("mean{New_cases} >= 300 and max{New_deaths} < 100"),
+                        html.Br(),
+                        html.Span(
+                            "Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths below 100"
+                        ),
+                    ]
+                ),
+                html.P(
+                    children=[
+                        html.Span("5. "),
+                        html.Strong(
+                            "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}"
+                        ),
+                        html.Br(),
+                        html.Span(
+                            "Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)"
+                        ),
+                    ]
                 ),
             ],
+            style={
+                "color": colors["text"],
+                "fontSize": 14,
+                "width": "50%",
+                "float": "left",
+            },
+        ),
+        html.Div(
+            id="column",
+            children=[],
+            style={
+                "color": colors["text"],
+                "fontSize": 14,
+                "width": "50%",
+                "float": "left",
+            },
         ),
     ],
 )
 
+# limit number of columns one can select for y-axis, from: https://community.plotly.com/t/limit-number-of-values-in-multi-select-dropdown-without-disabling/42020/7
+@app.callback(
+    Output(component_id="yaxis-column", component_property="options"),
+    [
+        Input(component_id="yaxis-column", component_property="value"),
+    ],
+)
+def update_dropdown_options(values):
+    if values != None and len(values) == 6:
+        return [
+            option for option in y_axis_dropdown_options if option["value"] in values
+        ]
+    else:
+        return y_axis_dropdown_options
+
 
 @app.callback(
-    Output(component_id="body-div", component_property="children"),
-    Input(component_id="show-secret", component_property="n_clicks"),
+    Output(component_id="column", component_property="children"),
+    Input(component_id="xaxis-column", component_property="value"),
+    Input(component_id="yaxis-column", component_property="value"),
 )
-def update_output(n_clicks):
-    if n_clicks is None or (n_clicks % 2 == 0):
-        return {}
-    else:
-        description1 = html.P(
-            children=[
-                html.Span("1. "),
-                html.Strong('{Continent} = "Asia"'),
-                html.Br(),
-                html.Span("Get all countries that are in Asia"),
-            ]
-        )
-        description2 = html.P(
-            children=[
-                html.Span("2. "),
-                html.Strong('{Continent} = "Europe" or {Population} >= 10000000'),
-                html.Br(),
-                html.Span(
-                    "Get all countries that are either in Europe or have a population of 10000000 or bigger"
-                ),
-            ]
-        )
-        description3 = html.P(
-            children=[
-                html.Span("3. "),
-                html.Strong(
-                    '({Continent} = "North America" or {Continent} = "South America") and {Human_development_index} < 30'
-                ),
-                html.Br(),
-                html.Span(
-                    "Get all countries that are either in North- or South America and have a human development index of smaller than 30"
-                ),
-            ]
-        )
-        description4 = html.P(
-            children=[
-                html.Span("4. "),
-                html.Strong("mean{New_cases} >= 300 and max{New_deaths} < 100"),
-                html.Br(),
-                html.Span(
-                    "Get all countries that have an average number of new cases of 300 or higher and the maxmimum number of new deaths below 100"
-                ),
-            ]
-        )
-        description5 = html.P(
-            children=[
-                html.Span("5. "),
-                html.Strong(
-                    "{New_cases} > mean{New_cases} + 3 * std{New_cases} or {New_cases} < mean{New_cases} - 3 * std{New_cases}"
-                ),
-                html.Br(),
-                html.Span(
-                    "Get all rows of countries that have a value of new cases that is either below or higher than the mean +- 3*std (outliers)"
-                ),
-            ]
-        )
-        return [
-            description1,
-            description2,
-            description3,
-            description4,
-            description5,
-        ]
+def show_column_desc(xaxis, yaxis):
+    total_descs = []
+    if xaxis != None:
+        xaxis_descs = df_column_desc[df_column_desc["column"] == xaxis.lower()]
+        if len(xaxis_descs) != 0:
+            total_descs.append((xaxis, xaxis_descs.iloc[0]["description"]))
+        else:
+            total_descs.append(
+                (
+                    xaxis,
+                    "descriptions can be found here: https://github.com/OxCGRT/covid-policy-tracker/blob/master/documentation/interpretation_guide.md",
+                )
+            )
+
+    if yaxis != None:
+        for yaxis_el in yaxis:
+            yaxis_descs = df_column_desc[df_column_desc["column"] == yaxis_el.lower()]
+            if len(yaxis_descs) != 0:
+                total_descs.append((yaxis_el, yaxis_descs.iloc[0]["description"]))
+            else:
+                total_descs.append(
+                    (
+                        yaxis_el,
+                        "descriptions can be found here: https://github.com/OxCGRT/covid-policy-tracker/blob/master/documentation/interpretation_guide.md",
+                    )
+                )
+
+    return [html.Div(children=column + ": " + desc) for column, desc in total_descs]
+
+
+@app.callback(
+    Output(component_id="column", component_property="hidden"),
+    Output(component_id="hover_click", component_property="hidden"),
+    Output(component_id="filter_examples", component_property="hidden"),
+    Input(component_id="additional_information", component_property="value"),
+)
+def update_information(value):
+    column_desc_vis = value != "Column description"
+    hover_info_vis = value != "Hover/click information"
+    filter_examples_vis = value != "Filter query examples"
+
+    return column_desc_vis, hover_info_vis, filter_examples_vis
 
 
 @app.callback(
@@ -600,6 +697,8 @@ def display_click_data(
         Output("yaxis-type", "options"),
         Output("yaxis-type", "value"),
         Output("date-range-container", "children"),
+        Output("grouping", "options"),
+        Output("grouping", "value"),
     ],
     [
         Input("xaxis-column", "value"),
@@ -675,6 +774,12 @@ def update_graph(
                 min_date.strftime("%d %b %Y"),
                 max_date.strftime("%d %b %Y"),
             ),
+            [
+                {"label": elem, "value": elem}
+                for elem in df_.columns
+                if len(df_[elem].unique()) <= 10
+            ],
+            grouping,
         )
 
     if not (
@@ -688,49 +793,59 @@ def update_graph(
     if country != None and country != []:
         df_ = df_[df_["Location"].isin(country)]
 
-    # aggregate data according to xaxis and the color-by (if given)
-    cols_to_mean_up_present = list(set(cols_to_mean_up) & set(yaxis_column_name))
-    cols_to_mean_up_present_new_names = []
-    for i, col in enumerate(cols_to_mean_up_present):
-        df_["{}_times_population".format(col)] = df_[col] * df_["Population"]
-        cols_to_mean_up_present_new_names.append("{}_times_population".format(col))
+    # update color by options, such that only columns that have less than unique values are allowed
+    color_by_options = [
+        {"label": elem, "value": elem}
+        for elem in df_.columns
+        if len(df_[elem].unique()) <= 10
+    ]
+    if not any([grouping == elem["label"] for elem in color_by_options]):
+        grouping = None
 
-    cols = (
-        list(set(yaxis_column_name) - set(cols_to_mean_up_present))
-        + cols_to_mean_up_present_new_names
-    )
+    if plot_type != "Predict":
+        # aggregate data according to xaxis and the color-by (if given)
+        cols_to_mean_up_present = list(set(cols_to_mean_up) & set(yaxis_column_name))
+        cols_to_mean_up_present_new_names = []
+        for i, col in enumerate(cols_to_mean_up_present):
+            df_["{}_times_population".format(col)] = df_[col] * df_["Population"]
+            cols_to_mean_up_present_new_names.append("{}_times_population".format(col))
 
-    sum_divide_population = list(
-        set(cols_to_sum_up_with_population) & set(yaxis_column_name)
-    )
-    for col in sum_divide_population:
-        cols.append(col[:-13])
-    cols = list(set(cols))
-    if grouping != None:
-        df_ = (
-            df_[set(cols + [xaxis_column_name, grouping, "Population"])]
-            .groupby(xaxis_column_name)
-            .apply(lambda x: x.groupby(grouping).sum())
+        cols = (
+            list(set(yaxis_column_name) - set(cols_to_mean_up_present))
+            + cols_to_mean_up_present_new_names
         )
+
+        sum_divide_population = list(
+            set(cols_to_sum_up_with_population) & set(yaxis_column_name)
+        )
+        for col in sum_divide_population:
+            cols.append(col[:-13])
+        cols = list(set(cols))
+        if grouping != None:
+            df_ = (
+                df_[set(cols + [xaxis_column_name, grouping, "Population"])]
+                .groupby([xaxis_column_name, grouping])
+                .sum()
+            )
+        else:
+            df_ = (
+                df_[set(cols + [xaxis_column_name, "Population"])]
+                .groupby(xaxis_column_name, as_index=False)
+                .sum()
+            )
+
         df_.reset_index(inplace=True)
-    else:
-        df_ = (
-            df_[set(cols + [xaxis_column_name, "Population"])]
-            .groupby(xaxis_column_name)
-            .sum()
-        )
-        df_.reset_index(inplace=True)
 
-    if cols_to_mean_up_present != []:
-        df_[cols_to_mean_up_present] = (
-            df_[cols_to_mean_up_present_new_names]
-            / df_["Population"].to_numpy()[:, np.newaxis]
-        )
+        if cols_to_mean_up_present != []:
+            df_[cols_to_mean_up_present] = (
+                df_[cols_to_mean_up_present_new_names]
+                / df_["Population"].to_numpy()[:, np.newaxis]
+            )
 
-    if sum_divide_population != []:
-        df_[sum_divide_population] = df_[
-            [elem[:-13] for elem in sum_divide_population]
-        ] / (df_["Population"].to_numpy()[:, np.newaxis] / 1e3)
+        if sum_divide_population != []:
+            df_[sum_divide_population] = df_[
+                [elem[:-13] for elem in sum_divide_population]
+            ] / (df_["Population"].to_numpy()[:, np.newaxis] / 1e3)
 
     if yaxis_column_name != None and len(yaxis_column_name) > 1:
         # Create figure with secondary y-axis
@@ -743,7 +858,10 @@ def update_graph(
             df_[yaxis_column_name[0]].max(),
             df_[yaxis_column_name[1]].max(),
         )
-        symbols = SymbolValidator().values
+        if grouping != None:
+            color_groups = df_[grouping].unique()
+            color_mapping = dict(zip(color_groups, np.arange(len(color_groups))))
+            group_data = np.array([color_mapping[elem] for elem in df_[grouping]])
         # markers https://plotly.com/python/marker-style/
         for i, yaxis in enumerate(yaxis_column_name):
             cur_data = df_[yaxis]
@@ -774,17 +892,31 @@ def update_graph(
 
             # Add traces
             if plot_type == "Scatter":
-                fig.add_trace(
-                    go.Scatter(
-                        x=xaxis_data,
-                        y=cur_data,
-                        name=str(yaxis),
-                        mode="markers",
-                        marker_symbol=symbols[i],
-                    ),
-                    secondary_y=add_to_secondary,
-                )
-                # marker_color=(df_[grouping] if grouping != None else None),
+                if grouping != None:
+                    for j, group in enumerate(color_groups):
+                        data = df_[df_[grouping] == group]
+                        fig.add_trace(
+                            go.Scatter(
+                                x=data[xaxis_column_name],
+                                y=data[yaxis],
+                                name="{}_{}".format(yaxis, group),
+                                mode="markers",
+                                marker_symbol=symbols[i],
+                                marker_color=plot_colors[j],
+                            ),
+                            secondary_y=add_to_secondary,
+                        )
+                else:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=xaxis_data,
+                            y=df_[yaxis],
+                            name=str(yaxis),
+                            mode="markers",
+                            marker_symbol=symbols[i],
+                        ),
+                        secondary_y=add_to_secondary,
+                    )
             elif plot_type == "Bar":
                 fig.add_trace(
                     go.Bar(
@@ -792,18 +924,50 @@ def update_graph(
                         y=cur_data,
                         name=str(yaxis),
                         offsetgroup=i,
+                        marker_pattern_shape=patterns[i],
+                        marker_color=plot_colors[group_data]
+                        if grouping != None
+                        else None,
+                        showlegend=grouping == None,
                     ),
                     secondary_y=add_to_secondary,
                 )
+                if grouping != None:
+                    for j, group in enumerate(color_groups):
+                        fig.add_trace(
+                            go.Bar(
+                                x=[None],
+                                y=[None],
+                                name="{}_{}".format(yaxis, group),
+                                marker_pattern_shape=patterns[i],
+                                marker_color=plot_colors[j],
+                                showlegend=True,
+                            )
+                        )
             elif plot_type == "Line":
-                fig.add_trace(
-                    go.Line(
-                        x=xaxis_data,
-                        y=df_[yaxis],
-                        name=str(yaxis),
-                    ),
-                    secondary_y=add_to_secondary,
-                )
+                if grouping != None:
+                    for j, group in enumerate(color_groups):
+                        data = df_[df_[grouping] == group]
+                        fig.add_trace(
+                            go.Scatter(
+                                x=data[xaxis_column_name],
+                                y=data[yaxis],
+                                name="{}_{}".format(yaxis, group),
+                                line=dict(dash=line_styles[i]),
+                                marker_color=plot_colors[j],
+                            ),
+                            secondary_y=add_to_secondary,
+                        )
+                else:
+                    fig.add_trace(
+                        go.Scatter(
+                            x=xaxis_data,
+                            y=df_[yaxis],
+                            name=str(yaxis),
+                            line=dict(dash=line_styles[i]),
+                        ),
+                        secondary_y=add_to_secondary,
+                    )
 
         # Set x-axis title
         if xaxis_type == "Log":
@@ -836,7 +1000,7 @@ def update_graph(
                 y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(grouping if grouping != None else None),
+                color=grouping,
             )
         elif plot_type == "Bar":
             fig = px.bar(
@@ -845,7 +1009,7 @@ def update_graph(
                 y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(grouping if grouping != None else None),
+                color=grouping,
             )
         elif plot_type == "Line":
             fig = px.line(
@@ -854,11 +1018,8 @@ def update_graph(
                 y=yaxis_column_name,
                 log_x=xaxis_type == "Log",
                 log_y=yaxis_type == "Log",
-                color=(grouping if grouping != None else None),
+                color=grouping,
             )
-            # if grouping == None:
-            #     fig.update_layout(showlegend=False)
-            #     fig.update_traces(line_color="#636EFA")
         elif plot_type == "Predict":
             fig = go.Figure()
 
@@ -905,6 +1066,8 @@ def update_graph(
             min_date.strftime("%d %b %Y"),
             max_date.strftime("%d %b %Y"),
         ),
+        color_by_options,
+        grouping,
     )
 
 
