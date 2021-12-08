@@ -85,11 +85,6 @@ y_axis_dropdown_options = [
     {"label": elem, "value": elem} for elem in df.columns if not elem in cols_to_ignore
 ] + [{"label": "Population", "value": "Population"}]
 
-# load only some of the data for faster updating
-# df = pd.DataFrame(
-#    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
-# )
-
 app.layout = html.Div(
     style={"backgroundColor": colors["bg"]},
     children=[
@@ -730,7 +725,7 @@ def update_graph(
         {"label": label, "value": value}
         for label, value in zip(["Linear", "Logarithmic"], ["Linear", "Log"])
     ]
-    # check if xaxis_colum in non-numerical, if yes disable log selection
+    # check if x/yaxis_column in non-numerical, if yes disable log selection
     if xaxis_column_name != None and not is_numeric_dtype(df[xaxis_column_name]):
         x_radio_options[1]["disabled"] = True
         xaxis_type = "Linear"
@@ -740,7 +735,7 @@ def update_graph(
         y_radio_options[1]["disabled"] = True
         yaxis_type = "Linear"
 
-    # filter data according to daterange and filter query
+    # filter data according to daterange
     df_ = df.copy()
     date_range = sorted(df_["Date"].unique())
     min_date, max_date = (
@@ -781,6 +776,7 @@ def update_graph(
             grouping,
         )
 
+    # filter data according to filter query
     if not (
         query is None or query == ""
     ):  # remember: add options for filter and a country filter
@@ -792,7 +788,7 @@ def update_graph(
     if country != None and country != []:
         df_ = df_[df_["Location"].isin(country)]
 
-    # update color by options, such that only columns that have less than unique values are allowed
+    # update color by options, such that only columns that have less than 10 unique values are allowed
     color_by_options = [
         {"label": elem, "value": elem}
         for elem in df_.columns
@@ -803,6 +799,10 @@ def update_graph(
 
     if plot_type != "Predict":
         # aggregate data according to xaxis and the color-by (if given)
+        # some columns should be added up (e.g. new_cases, total-cases..) for all groups
+        # the per_thousand columns should also be added up and then divided by the sum of populations
+        # (but we need to add them before dividing py population, otherwise there will be an error)
+        # and the other columns will be averaged up with a weight according to the population
         cols_to_mean_up_present = list(set(cols_to_mean_up) & set(yaxis_column_name))
         cols_to_mean_up_present_new_names = []
         for i, col in enumerate(cols_to_mean_up_present):
@@ -1071,4 +1071,4 @@ def update_graph(
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=False)
