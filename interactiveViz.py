@@ -12,6 +12,7 @@ import json
 import numpy as np
 import filter_dash
 
+# import required data from other files
 from data_processing import getData
 from predict import Model
 
@@ -36,20 +37,25 @@ colors = {
     "buttonColor": "#4fc6e9",
 }
 
+# retrieve the processed data
 df = getData()
 
+# add description file for columns
 df_column_desc = pd.read_csv(
     "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-codebook.csv"
 )
 
+# rename and sort the columns alfabetically in the dataset
 df = df.rename(columns={elem: elem[0].upper() + elem[1:] for elem in df.columns})
+df = df.rename(columns={"ConfirmedDeaths": "Total_deaths"})
 df = df.sort_index(axis=1)
 
+# retrieve the data for prediction visualization
 model = Model(df)
 
 # add columns divided by population
 cols_to_divide_by_population = [
-    "ConfirmedDeaths",
+    "Total_deaths",
     "New_cases",
     "New_deaths",
     "New_tests",
@@ -84,6 +90,12 @@ cols_to_mean_up = list(
 y_axis_dropdown_options = [
     {"label": elem, "value": elem} for elem in df.columns if not elem in cols_to_ignore
 ] + [{"label": "Population", "value": "Population"}]
+
+# load only some of the data for faster updating
+# df = pd.DataFrame(
+#    {"location": np.arange(10), "new_cases": np.arange(10), "continent": np.arange(10)}
+# )
+
 
 app.layout = html.Div(
     style={"backgroundColor": colors["bg"]},
@@ -438,10 +450,6 @@ app.layout = html.Div(
                         ),
                         html.Pre(
                             id="hover-data",
-                            style={
-                                # "border": "thin lightgrey solid",
-                                # "overflowX": "scroll",
-                            },
                         ),
                     ],
                     className="three columns",
@@ -460,10 +468,6 @@ app.layout = html.Div(
                         ),
                         html.Pre(
                             id="click-data",
-                            style={
-                                # "border": "thin lightgrey solid",
-                                # "overflowX": "scroll",
-                            },
                         ),
                     ],
                     className="three columns",
@@ -569,6 +573,7 @@ def update_dropdown_options(values):
         return y_axis_dropdown_options
 
 
+# show the column descriptions when columns are chosen
 @app.callback(
     Output(component_id="column", component_property="children"),
     Input(component_id="xaxis-column", component_property="value"),
@@ -604,6 +609,7 @@ def show_column_desc(xaxis, yaxis):
     return [html.Div(children=column + ": " + desc) for column, desc in total_descs]
 
 
+# add additional information for the visualization tool
 @app.callback(
     Output(component_id="column", component_property="hidden"),
     Output(component_id="hover_click", component_property="hidden"),
@@ -618,6 +624,7 @@ def update_information(value):
     return column_desc_vis, hover_info_vis, filter_examples_vis
 
 
+# display information when hovering datapoints
 @app.callback(
     Output("hover-data", "children"),
     Input("indicator-graphic", "hoverData"),
@@ -648,6 +655,7 @@ def display_hover_data(hoverData, xaxis_column, yaxis_column, plot_type):
         )
 
 
+# display information when clicking datapoints
 @app.callback(
     Output("click-data", "children"),
     Input("indicator-graphic", "clickData"),
@@ -992,7 +1000,7 @@ def update_graph(
             row=1,
         )
     else:
-        if plot_type == "Scatter":  # remember: only make some parameters available?
+        if plot_type == "Scatter":
             fig = px.scatter(
                 df_,
                 x=xaxis_column_name,

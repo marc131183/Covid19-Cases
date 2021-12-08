@@ -1,5 +1,15 @@
 # Covid19-Cases
 
+## Installation
+
+    git clone git@github.com:marc131183/Covid19-Cases.git
+    cd Covid19-Cases
+    pip3 install -e .
+
+## The Visualization Tool
+
+The Visualization Tool is started by executing the [interactiveViz.py](https://github.com/marc131183/Covid19-Cases/blob/main/interactiveViz.py) file. Then the tool will be hosted at http://127.0.0.1:8050/.
+
 ## Filtering of data
 
 The visualization tool comes with an option to filter data, before visualizing it, these are a few examples on how it works:
